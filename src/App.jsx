@@ -14,7 +14,7 @@ const TOPICS = [
 
 // ─── Reputation badge thresholds ─────────────────────────────────
 const BADGES = [
-  { id: "newbie",   label: "新人",       min: 0,    color: "#9ca3af", emoji: "🌱" },
+  { id: "newbie",   label: "新人",       min: 0,    color: "var(--text-4)", emoji: "🌱" },
   { id: "active",   label: "アクティブ", min: 50,   color: "#10b981", emoji: "✨" },
   { id: "thinker",  label: "論客",       min: 200,  color: "#8b5cf6", emoji: "🧠" },
   { id: "veteran",  label: "ベテラン",   min: 500,  color: "#f59e0b", emoji: "⭐" },
@@ -294,8 +294,8 @@ const timeLeft = (deadline) => {
 };
 
 const STANCE = {
-  pro: { label: "賛成", color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe", bar: "#93c5fd", light: "#f0f7ff", emoji: "👍" },
-  con: { label: "反対", color: "#b91c1c", bg: "#fff5f5", border: "#fecaca", bar: "#fca5a5", light: "#fff8f8", emoji: "👎" },
+  pro: { label: "賛成", color: "#1d4ed8", bg: "var(--pro-bg)", border: "#bfdbfe", bar: "#93c5fd", light: "var(--pro-light)", emoji: "👍" },
+  con: { label: "反対", color: "#b91c1c", bg: "var(--con-bg)", border: "#fecaca", bar: "#fca5a5", light: "var(--con-light)", emoji: "👎" },
 };
 
 const pct = (pro, con) => {
@@ -388,7 +388,7 @@ function StanceBar({ pro, con, showLabels=false, height=6 }) {
   const { proP, conP } = pct(pro, con);
   return (
     <div style={{ width:"100%" }}>
-      <div style={{ display:"flex", height, borderRadius:99, overflow:"hidden", background:"#f3f4f6" }}>
+      <div style={{ display:"flex", height, borderRadius:99, overflow:"hidden", background:"var(--surface-3)" }}>
         <div style={{ width:`${proP}%`, background:STANCE.pro.bar, transition:"width .5s cubic-bezier(.4,0,.2,1)" }} />
         <div style={{ width:`${conP}%`, background:STANCE.con.bar, transition:"width .5s cubic-bezier(.4,0,.2,1)" }} />
       </div>
@@ -412,8 +412,8 @@ function StancePicker({ current, onChange, size="md", disabled=false }) {
           <button key={s} onClick={e=>{e.stopPropagation();if(!disabled)onChange(s);}} disabled={disabled}
             style={{ display:"flex", alignItems:"center", gap:sm?4:6,
               padding:sm?"4px 12px":"8px 20px", borderRadius:99,
-              border:`1.5px solid ${active?st.border:"#e5e7eb"}`,
-              background:active?st.bg:"#fff", color:active?st.color:"#9ca3af",
+              border:`1.5px solid ${active?st.border:"var(--border)"}`,
+              background:active?st.bg:"var(--surface)", color:active?st.color:"var(--text-4)",
               fontWeight:700, fontSize:sm?12:14, cursor:disabled?"not-allowed":"pointer", transition:"all .15s", fontFamily:"inherit" }}>
             <span style={{fontSize:sm?12:15}}>{st.emoji}</span>{st.label}
           </button>
@@ -456,7 +456,7 @@ function StatusBadge({ status, deadline }) {
   if (status === "closed") {
     return (
       <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 9px", borderRadius:99,
-        background:"#f3f4f6", color:"#4b5563", fontWeight:700, fontSize:11, border:"1px solid #d1d5db" }}>
+        background:"var(--surface-3)", color:"var(--text-2)", fontWeight:700, fontSize:11, border:"1px solid var(--border-2)" }}>
         🔒 決着済み
       </span>
     );
@@ -466,7 +466,7 @@ function StatusBadge({ status, deadline }) {
   const urgent = (deadline - Date.now()) < 24*3600*1000;
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 9px", borderRadius:99,
-      background: urgent ? "#fef3c7" : "#ecfdf5", color: urgent ? "#92400e" : "#065f46",
+      background: urgent ? "var(--amber-bg)" : "#ecfdf5", color: urgent ? "#92400e" : "#065f46",
       fontWeight:700, fontSize:11, border:`1px solid ${urgent?"#fcd34d":"#a7f3d0"}` }}>
       ⏱ {tl}
     </span>
@@ -505,7 +505,7 @@ function VoteHistoryGraph({ history }) {
         {/* Grid lines */}
         {[0.25, 0.5, 0.75].map((r,i) => (
           <line key={i} x1={pad.left} x2={lastX} y1={pad.top + r*innerH} y2={pad.top + r*innerH}
-            stroke="#f3f4f6" strokeWidth="1" />
+            stroke="var(--surface-3)" strokeWidth="1" />
         ))}
 
         {/* Pro area + line */}
@@ -529,8 +529,8 @@ function VoteHistoryGraph({ history }) {
         })()}
 
         {/* x-axis labels */}
-        <text x={pad.left} y={h-5} fontSize="9" fill="#9ca3af">投稿時</text>
-        <text x={lastX-22} y={h-5} fontSize="9" fill="#9ca3af">現在</text>
+        <text x={pad.left} y={h-5} fontSize="9" fill="var(--text-4)">投稿時</text>
+        <text x={lastX-22} y={h-5} fontSize="9" fill="var(--text-4)">現在</text>
       </svg>
     </div>
   );
@@ -539,8 +539,8 @@ function VoteHistoryGraph({ history }) {
 // ─── AI Summary Card ──────────────────────────────────────────────
 function AISummary({ summary }) {
   return (
-    <div style={{ background:"linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 100%)",
-      border:"1px solid #e9d5ff", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
+    <div style={{ background:"linear-gradient(135deg, var(--violet-1) 0%, var(--violet-2) 100%)",
+      border:"1px solid var(--violet-border)", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
         <span style={{ fontSize:18 }}>✨</span>
         <span style={{ fontWeight:800, fontSize:14, color:"#6d28d9", letterSpacing:-0.2 }}>AIによる議論要約</span>
@@ -550,14 +550,14 @@ function AISummary({ summary }) {
         {["pro","con"].map(s => {
           const st = STANCE[s];
           return (
-            <div key={s} style={{ background:"#fff", borderRadius:10, padding:"12px 14px", border:`1px solid ${st.border}` }}>
+            <div key={s} style={{ background:"var(--surface)", borderRadius:10, padding:"12px 14px", border:`1px solid ${st.border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
                 <span style={{ fontSize:14 }}>{st.emoji}</span>
                 <span style={{ fontSize:12, fontWeight:800, color:st.color }}>{st.label}の主要論点</span>
               </div>
               <ul style={{ listStyle:"none", padding:0, margin:0 }}>
                 {summary[s].map((point, i) => (
-                  <li key={i} style={{ display:"flex", gap:6, fontSize:12.5, color:"#374151", lineHeight:1.55, marginBottom:6 }}>
+                  <li key={i} style={{ display:"flex", gap:6, fontSize:12.5, color:"var(--text-2)", lineHeight:1.55, marginBottom:6 }}>
                     <span style={{ color:st.color, fontWeight:800, flexShrink:0 }}>{i+1}.</span>
                     <span>{point}</span>
                   </li>
@@ -615,7 +615,7 @@ function Thread({ comment, debateId, dispatch, locked }) {
   const rootSt = STANCE[comment.stance];
 
   return (
-    <div style={{ marginBottom:20, background:"#fff", border:`1px solid ${rootSt.border}`,
+    <div style={{ marginBottom:20, background:"var(--surface)", border:`1px solid ${rootSt.border}`,
       borderRadius:12, padding:"14px 12px 12px", boxShadow:"0 1px 3px rgba(0,0,0,0.03)" }}>
 
       {/* 縦に積まれる行 */}
@@ -653,7 +653,7 @@ function Thread({ comment, debateId, dispatch, locked }) {
           borderTop:`1px dashed ${rootSt.border}`, justifyContent:"center", flexWrap:"wrap" }}>
           {!replyingStance ? (
             <>
-              <span style={{ fontSize:11, color:"#9ca3af", alignSelf:"center" }}>このスレッドに返信:</span>
+              <span style={{ fontSize:11, color:"var(--text-4)", alignSelf:"center" }}>このスレッドに返信:</span>
               <button onClick={()=>setReplyingStance("pro")}
                 style={{ ...replyBtn, color:STANCE.pro.color, borderColor:STANCE.pro.border, background:STANCE.pro.bg }}>
                 👍 賛成として
@@ -672,7 +672,7 @@ function Thread({ comment, debateId, dispatch, locked }) {
               <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2}
                 placeholder="あなたの意見を書く…"
                 style={{ width:"100%", padding:"7px 10px", border:`1px solid ${STANCE[replyingStance].border}`,
-                  borderRadius:8, fontSize:13, fontFamily:"inherit", resize:"vertical", outline:"none", background:"#fff" }} />
+                  borderRadius:8, fontSize:13, fontFamily:"inherit", resize:"vertical", outline:"none", background:"var(--surface)" }} />
               <div style={{ display:"flex", gap:8, marginTop:7 }}>
                 <button onClick={submitReply} disabled={!replyText.trim() || overQuota}
                   style={{ background:STANCE[replyingStance].color, color:"#fff", border:"none", borderRadius:99,
@@ -681,8 +681,8 @@ function Thread({ comment, debateId, dispatch, locked }) {
                 </button>
                 {overQuota && <span style={{ fontSize:11, color:STANCE.con.color, fontWeight:600, alignSelf:"center" }}>今月のコメント上限に達しました</span>}
                 <button onClick={()=>{setReplyingStance(null); setReplyText("");}}
-                  style={{ background:"none", border:"1px solid #e5e7eb", borderRadius:99,
-                    padding:"5px 14px", fontSize:12, fontWeight:700, cursor:"pointer", color:"#374151", fontFamily:"inherit" }}>
+                  style={{ background:"none", border:"1px solid var(--border)", borderRadius:99,
+                    padding:"5px 14px", fontSize:12, fontWeight:700, cursor:"pointer", color:"var(--text-2)", fontFamily:"inherit" }}>
                   キャンセル
                 </button>
               </div>
@@ -710,9 +710,9 @@ function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCommentId
       paddingRight: isPro ? 0 : 24,
       marginBottom: -4,
     }}>
-      <span style={{ fontSize:10, color:"#9ca3af", fontWeight:600,
-        background:"#fff", padding:"1px 8px", borderRadius:99,
-        border:"1px dashed #e5e7eb" }}>
+      <span style={{ fontSize:10, color:"var(--text-4)", fontWeight:600,
+        background:"var(--surface)", padding:"1px 8px", borderRadius:99,
+        border:"1px dashed var(--border)" }}>
         {isRebuttal
           ? `↩ #${rowNum-1}（${STANCE[prevBubble.stance].label}）への反論`
           : `↳ #${rowNum-1} への補強`}
@@ -753,22 +753,22 @@ function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) 
         </div>
         <button onClick={()=>dispatch({type:"SET_USER",author:bubble.author})}
           style={{ background:"none", border:"none", padding:0, cursor:"pointer",
-            fontWeight:700, fontSize:11, color:"#111827", fontFamily:"inherit" }}>u/{bubble.author}</button>
+            fontWeight:700, fontSize:11, color:"var(--text)", fontFamily:"inherit" }}>u/{bubble.author}</button>
         <UserBadge author={bubble.author} size="sm" />
         <div style={{ display:"flex", alignItems:"center", gap:6,
           marginLeft: isPro ? "auto" : 0, marginRight: isPro ? 0 : "auto",
           flexDirection: isPro ? "row" : "row-reverse" }}>
           <button onClick={()=>!locked && dispatch({type:"LIKE",...likeInfo})} disabled={locked}
             title="いいね"
-            style={{ display:"flex", alignItems:"center", gap:3, background: liked ? "#fff1f2" : "none",
+            style={{ display:"flex", alignItems:"center", gap:3, background: liked ? "var(--rose-bg)" : "none",
               border:`1px solid ${liked ? "#fecdd3" : "transparent"}`, borderRadius:99,
               padding:"1px 7px", cursor: locked ? "default" : "pointer", fontFamily:"inherit",
-              color: liked ? "#e11d48" : "#9ca3af", fontSize:10, fontWeight:700 }}>
+              color: liked ? "#e11d48" : "var(--text-4)", fontSize:10, fontWeight:700 }}>
             <span style={{ fontSize:11 }}>{liked ? "♥" : "♡"}</span>{fmt(bubble.score)}
           </button>
           <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`u/${bubble.author} のコメント`}})}
             title="通報" style={{ background:"none", border:"none", padding:0, cursor:"pointer",
-              fontSize:10, color:"#d1d5db" }}>🚩</button>
+              fontSize:10, color:"var(--border-2)" }}>🚩</button>
         </div>
       </div>
 
@@ -778,7 +778,7 @@ function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) 
         border:`1.5px solid ${st.border}`,
         borderRadius: isPro ? "4px 12px 12px 12px" : "12px 4px 12px 12px",
         padding:"10px 12px",
-        fontSize:13, color:"#374151", lineHeight:1.6,
+        fontSize:13, color:"var(--text-2)", lineHeight:1.6,
         boxShadow: isRoot ? "0 1px 3px rgba(0,0,0,0.05)" : "none",
         position:"relative",
       }}>
@@ -800,7 +800,7 @@ function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) 
 }
 
 const replyBtn = {
-  background:"#fff", border:"1.5px solid", borderRadius:99,
+  background:"var(--surface)", border:"1.5px solid", borderRadius:99,
   padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
 };
 
@@ -831,15 +831,15 @@ function SplitComments({ d, dispatch }) {
   return (
     <div>
       {locked ? (
-        <div style={{ background:"#f9fafb", border:"1.5px solid #e5e7eb", borderRadius:14, padding:"16px 22px", marginBottom:14, textAlign:"center" }}>
-          <div style={{ fontSize:14, fontWeight:700, color:"#4b5563", marginBottom:4 }}>🔒 このディベートは決着済みです</div>
-          <p style={{ fontSize:13, color:"#6b7280" }}>新しい投票・コメントは投稿できません。過去の議論を閲覧してください。</p>
+        <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:14, padding:"16px 22px", marginBottom:14, textAlign:"center" }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:4 }}>🔒 このディベートは決着済みです</div>
+          <p style={{ fontSize:13, color:"var(--text-3)" }}>新しい投票・コメントは投稿できません。過去の議論を閲覧してください。</p>
         </div>
       ) : (
-        <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
+        <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, flexWrap:"wrap", gap:6 }}>
-            <p style={{ fontSize:13, color:"#6b7280" }}>u/あなた として新しいスレッドを開始</p>
-            <span style={{ fontSize:11, fontWeight:700, color: overQuota ? STANCE.con.color : "#9ca3af" }}>
+            <p style={{ fontSize:13, color:"var(--text-3)" }}>u/あなた として新しいスレッドを開始</p>
+            <span style={{ fontSize:11, fontWeight:700, color: overQuota ? STANCE.con.color : "var(--text-4)" }}>
               今月のコメント {usedComments}/{perk.comments}
             </span>
           </div>
@@ -850,12 +850,12 @@ function SplitComments({ d, dispatch }) {
             </div>
           )}
           <div style={{ marginBottom:10, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-            <span style={{ fontSize:13, fontWeight:700, color:"#374151" }}>立場を選択：</span>
+            <span style={{ fontSize:13, fontWeight:700, color:"var(--text-2)" }}>立場を選択：</span>
             <StancePicker current={myStance} onChange={setMyStance} />
           </div>
           <textarea value={text} onChange={e=>setText(e.target.value)} rows={3}
             placeholder="あなたの意見・論点を書いてください…"
-            style={{ width:"100%", padding:"10px 14px", border:"1px solid #e5e7eb", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"#111827" }} />
+            style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"var(--text)" }} />
           <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
             <button onClick={submit} disabled={!text.trim() || overQuota}
               style={{ background:STANCE.pro.color, color:"#fff", border:"none", borderRadius:99, padding:"8px 22px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -875,7 +875,7 @@ function SplitComments({ d, dispatch }) {
               background:st.bg, border:`1px solid ${st.border}`, borderRadius:10 }}>
               <span style={{ fontSize:16 }}>{st.emoji}</span>
               <span style={{ fontWeight:700, fontSize:14, color:st.color }}>{st.label}カラム</span>
-              <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"#fff",
+              <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"var(--surface)",
                 color:st.color, padding:"2px 8px", borderRadius:99, border:`1px solid ${st.border}` }}>
                 スレッド {cnt}件
               </span>
@@ -890,7 +890,7 @@ function SplitComments({ d, dispatch }) {
           {["pro","con"].map(s => {
             const st = STANCE[s];
             return (
-              <div key={s} style={{ textAlign:"center", padding:"28px 12px", color:"#9ca3af",
+              <div key={s} style={{ textAlign:"center", padding:"28px 12px", color:"var(--text-4)",
                 fontSize:13, border:`1.5px dashed ${st.border}`, borderRadius:10, background:st.light }}>
                 まだ{st.label}意見がありません
               </div>
@@ -912,8 +912,8 @@ function RelatedDebates({ current, all, dispatch }) {
   if (related.length === 0) return null;
 
   return (
-    <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, padding:"16px 18px", marginTop:16 }}>
-      <h4 style={{ fontWeight:800, fontSize:14, color:"#111827", marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
+    <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"16px 18px", marginTop:16 }}>
+      <h4 style={{ fontWeight:800, fontSize:14, color:"var(--text)", marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
         <span>🔗</span>関連するディベート
       </h4>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -921,16 +921,16 @@ function RelatedDebates({ current, all, dispatch }) {
           const { proP, conP } = pct(r.pro, r.con);
           return (
             <div key={r.id} onClick={()=>dispatch({type:"SET_ACTIVE",debate:r})}
-              style={{ padding:"12px 14px", border:"1px solid #e5e7eb", borderRadius:10,
+              style={{ padding:"12px 14px", border:"1px solid var(--border)", borderRadius:10,
                 cursor:"pointer", transition:"all .15s" }}
-              onMouseEnter={e=>e.currentTarget.style.background="#f9fafb"}
+              onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
               onMouseLeave={e=>e.currentTarget.style.background=""}>
-              <p style={{ fontSize:13, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:6 }}>{r.title}</p>
+              <p style={{ fontSize:13, fontWeight:700, color:"var(--text)", lineHeight:1.4, marginBottom:6 }}>{r.title}</p>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                 <span style={{ fontSize:11, color:STANCE.pro.color, fontWeight:700 }}>👍 {proP}%</span>
                 <span style={{ fontSize:11, color:STANCE.con.color, fontWeight:700 }}>👎 {conP}%</span>
                 <StatusBadge status={r.status} deadline={r.deadline} />
-                <span style={{ fontSize:11, color:"#9ca3af", marginLeft:"auto" }}>💬 {fmt(r.commentCount)}</span>
+                <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>💬 {fmt(r.commentCount)}</span>
               </div>
               <StanceBar pro={r.pro} con={r.con} height={4} />
             </div>
@@ -962,9 +962,9 @@ function UserPage({ author, dispatch }) {
   const isMe = author === "あなた";
 
   const Stat = ({ label, value, color }) => (
-    <div style={{ flex:1, textAlign:"center", padding:"14px 8px", background:"#fff", border:"1px solid #e5e7eb", borderRadius:12 }}>
-      <div style={{ fontSize:22, fontWeight:800, color: color || "#111827" }}>{value}</div>
-      <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{label}</div>
+    <div style={{ flex:1, textAlign:"center", padding:"14px 8px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+      <div style={{ fontSize:22, fontWeight:800, color: color || "var(--text)" }}>{value}</div>
+      <div style={{ fontSize:12, color:"var(--text-3)", marginTop:2 }}>{label}</div>
     </div>
   );
 
@@ -975,25 +975,25 @@ function UserPage({ author, dispatch }) {
         ← 一覧に戻る
       </button>
 
-      <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, padding:"24px 28px", marginBottom:16 }}>
+      <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"24px 28px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
           <div style={{ width:64, height:64, borderRadius:50, flexShrink:0,
             background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, fontWeight:800, color:"#374151" }}>
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, fontWeight:800, color:"var(--text-2)" }}>
             {author[0].toUpperCase()}
           </div>
           <div style={{ minWidth:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
-              <h2 style={{ fontSize:22, fontWeight:800, color:"#111827" }}>u/{author}</h2>
+              <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>u/{author}</h2>
               {isMe && <span style={{ fontSize:11, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 8px", borderRadius:99, fontWeight:700 }}>あなた</span>}
-              {isPopular && <span style={{ fontSize:11, background:"#fff1f2", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3" }}>🔥 人気ユーザー</span>}
+              {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3" }}>🔥 人気ユーザー</span>}
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:99,
                 background:badge.color+"15", color:badge.color, fontWeight:700, fontSize:13, border:`1px solid ${badge.color}40` }}>
                 {badge.emoji} {badge.label}
               </span>
-              <span style={{ fontSize:13, color:"#9ca3af", fontWeight:600 }}>Rep: {rep}</span>
+              <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>Rep: {rep}</span>
             </div>
           </div>
         </div>
@@ -1005,16 +1005,16 @@ function UserPage({ author, dispatch }) {
         </div>
 
         {isMe && (
-          <div style={{ marginTop:14, padding:"12px 16px", background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:12, fontSize:12, color:"#6b7280" }}>
-            現在のランク特典: 月間ディベート作成 <strong style={{ color:"#374151" }}>{perk.debates === 9999 ? "無制限" : perk.debates}</strong> 件 / コメント <strong style={{ color:"#374151" }}>{perk.comments === 9999 ? "無制限" : perk.comments}</strong> 件
+          <div style={{ marginTop:14, padding:"12px 16px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12, fontSize:12, color:"var(--text-3)" }}>
+            現在のランク特典: 月間ディベート作成 <strong style={{ color:"var(--text-2)" }}>{perk.debates === 9999 ? "無制限" : perk.debates}</strong> 件 / コメント <strong style={{ color:"var(--text-2)" }}>{perk.comments === 9999 ? "無制限" : perk.comments}</strong> 件
           </div>
         )}
       </div>
 
       {/* 投稿したディベート */}
-      <h3 style={{ fontWeight:800, fontSize:15, color:"#111827", margin:"0 0 10px 2px" }}>📣 投稿したディベート ({posts.length})</h3>
+      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px" }}>📣 投稿したディベート ({posts.length})</h3>
       {posts.length === 0 ? (
-        <p style={{ fontSize:13, color:"#9ca3af", padding:"16px", textAlign:"center", background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, marginBottom:20 }}>まだ投稿がありません</p>
+        <p style={{ fontSize:13, color:"var(--text-4)", padding:"16px", textAlign:"center", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, marginBottom:20 }}>まだ投稿がありません</p>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
           {posts.map(d => <DebateCard key={d.id} d={d} dispatch={dispatch} />)}
@@ -1022,23 +1022,23 @@ function UserPage({ author, dispatch }) {
       )}
 
       {/* コメント・返信 */}
-      <h3 style={{ fontWeight:800, fontSize:15, color:"#111827", margin:"0 0 10px 2px" }}>💬 コメント・返信 ({myBubbles.length})</h3>
+      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px" }}>💬 コメント・返信 ({myBubbles.length})</h3>
       {myBubbles.length === 0 ? (
-        <p style={{ fontSize:13, color:"#9ca3af", padding:"16px", textAlign:"center", background:"#fff", border:"1px solid #e5e7eb", borderRadius:12 }}>まだコメントがありません</p>
+        <p style={{ fontSize:13, color:"var(--text-4)", padding:"16px", textAlign:"center", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>まだコメントがありません</p>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {myBubbles.map(b => {
             const st = STANCE[b.stance];
             return (
               <div key={b.id} onClick={()=>dispatch({type:"SET_ACTIVE",debate:b.debate})}
-                style={{ background:"#fff", border:`1px solid ${st.border}`, borderLeft:`4px solid ${st.bar}`,
+                style={{ background:"var(--surface)", border:`1px solid ${st.border}`, borderLeft:`4px solid ${st.bar}`,
                   borderRadius:10, padding:"12px 16px", cursor:"pointer" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
                   <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{st.emoji} {st.label}・{b.kind}</span>
-                  <span style={{ fontSize:11, color:"#9ca3af" }}>on「{b.debate.title}」</span>
+                  <span style={{ fontSize:11, color:"var(--text-4)" }}>on「{b.debate.title}」</span>
                   <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, marginLeft:"auto" }}>♥ {fmt(b.score)}</span>
                 </div>
-                <p style={{ fontSize:13, color:"#374151", lineHeight:1.6 }}>{b.body}</p>
+                <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6 }}>{b.body}</p>
               </div>
             );
           })}
@@ -1063,7 +1063,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
         ← 一覧に戻る
       </button>
 
-      <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, overflow:"hidden", marginBottom:16 }}>
+      <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, overflow:"hidden", marginBottom:16 }}>
         <div style={{ display:"flex", height:8 }}>
           <div style={{ flex:d.pro, background:STANCE.pro.bar, transition:"flex .5s" }} />
           <div style={{ flex:d.con, background:STANCE.con.bar, transition:"flex .5s" }} />
@@ -1073,15 +1073,15 @@ function DebateDetail({ d, allDebates, dispatch }) {
         )}
         <div style={{ padding:"24px 28px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, background:"#f3f4f6", color:"#374151", padding:"3px 10px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
+            <span style={{ fontSize:12, background:"var(--surface-3)", color:"var(--text-2)", padding:"3px 10px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
             <button onClick={()=>dispatch({type:"SET_USER",author:d.author})}
-              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"#9ca3af", fontFamily:"inherit" }}>u/{d.author}</button>
-            <span style={{ fontSize:12, color:"#9ca3af" }}>• {ago(d.createdAt)}</span>
+              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
+            <span style={{ fontSize:12, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
             <UserBadge author={d.author} />
             <StatusBadge status={d.status} deadline={d.deadline} />
           </div>
-          <h2 style={{ fontSize:24, fontWeight:800, color:"#111827", lineHeight:1.3, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
-          <p style={{ fontSize:15, color:"#4b5563", lineHeight:1.8, marginBottom:16 }}>{d.description}</p>
+          <h2 style={{ fontSize:24, fontWeight:800, color:"var(--text)", lineHeight:1.3, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
+          <p style={{ fontSize:15, color:"var(--text-2)", lineHeight:1.8, marginBottom:16 }}>{d.description}</p>
           {(d.tags || []).length > 0 && (
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:24 }}>
               {d.tags.map(t => (
@@ -1115,7 +1115,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
               return (
                 <div key={s} onClick={()=>!locked && dispatch({type:"SET_STANCE",id:d.id,stance:s})}
                   style={{ textAlign:"center", padding:"18px 12px", borderRadius:12, cursor:locked?"default":"pointer",
-                    background:active?st.bg:"#fafafa", border:`1.5px solid ${active?st.border:"#e5e7eb"}`, transition:"all .2s",
+                    background:active?st.bg:"var(--surface-2)", border:`1.5px solid ${active?st.border:"var(--border)"}`, transition:"all .2s",
                     opacity: locked && !active ? 0.6 : 1 }}>
                   <div style={{ fontSize:24, marginBottom:6 }}>{st.emoji}</div>
                   <div style={{ fontSize:22, fontWeight:800, color:st.color }}>{fmt(count)}</div>
@@ -1127,12 +1127,12 @@ function DebateDetail({ d, allDebates, dispatch }) {
           </div>
 
           <StanceBar pro={d.pro} con={d.con} height={10} showLabels />
-          <p style={{ fontSize:12, color:"#9ca3af", textAlign:"center", marginTop:8 }}>計 {fmt(total)} 票</p>
+          <p style={{ fontSize:12, color:"var(--text-4)", textAlign:"center", marginTop:8 }}>計 {fmt(total)} 票</p>
 
           {/* Vote history graph */}
-          <div style={{ marginTop:20, padding:"16px 18px", background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:12 }}>
+          <div style={{ marginTop:20, padding:"16px 18px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-              <h4 style={{ fontWeight:700, fontSize:13, color:"#374151", display:"flex", alignItems:"center", gap:6 }}>
+              <h4 style={{ fontWeight:700, fontSize:13, color:"var(--text-2)", display:"flex", alignItems:"center", gap:6 }}>
                 📈 投票推移グラフ
               </h4>
               <div style={{ display:"flex", gap:10, fontSize:11 }}>
@@ -1148,12 +1148,12 @@ function DebateDetail({ d, allDebates, dispatch }) {
           </div>
 
           {!locked && (
-            <div style={{ marginTop:18, padding:"14px 18px", borderRadius:12, border:"1.5px dashed #e5e7eb", textAlign:"center" }}>
-              <p style={{ fontSize:14, fontWeight:700, color:"#374151", marginBottom:10 }}>
+            <div style={{ marginTop:18, padding:"14px 18px", borderRadius:12, border:"1.5px dashed var(--border)", textAlign:"center" }}>
+              <p style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:10 }}>
                 {d.userStance ? `あなたは「${STANCE[d.userStance].label}」を選択しています` : "あなたはどちら？"}
               </p>
               <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} />
-              {d.userStance && <p style={{ fontSize:12, color:"#9ca3af", marginTop:8 }}>もう一度クリックで取り消し</p>}
+              {d.userStance && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>もう一度クリックで取り消し</p>}
             </div>
           )}
 
@@ -1190,7 +1190,7 @@ function DebateCard({ d, dispatch }) {
 
   return (
     <div onClick={()=>dispatch({type:"SET_ACTIVE",debate:d})}
-      style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, overflow:"hidden",
+      style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, overflow:"hidden",
         cursor:"pointer", transition:"box-shadow .15s, transform .15s", opacity: locked ? 0.85 : 1 }}
       onMouseEnter={e=>{ e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.07)"; e.currentTarget.style.transform="translateY(-2px)"; }}
       onMouseLeave={e=>{ e.currentTarget.style.boxShadow=""; e.currentTarget.style.transform=""; }}>
@@ -1203,21 +1203,21 @@ function DebateCard({ d, dispatch }) {
       )}
       <div style={{ padding:"16px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
-          <span style={{ fontSize:11, background:"#f3f4f6", color:"#374151", padding:"2px 8px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
+          <span style={{ fontSize:11, background:"var(--surface-3)", color:"var(--text-2)", padding:"2px 8px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
           <button onClick={e=>{e.stopPropagation();dispatch({type:"SET_USER",author:d.author});}}
-            style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:11, color:"#9ca3af", fontFamily:"inherit" }}>u/{d.author}</button>
-          <span style={{ fontSize:11, color:"#9ca3af" }}>• {ago(d.createdAt)}</span>
+            style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:11, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
+          <span style={{ fontSize:11, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
           <StatusBadge status={d.status} deadline={d.deadline} />
           {d.userStance && <StanceBadge stance={d.userStance} />}
           {d.saved && <span style={{ fontSize:11, color:STANCE.pro.color }}>⭐</span>}
         </div>
-        <h3 style={{ fontSize:17, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:14, letterSpacing:-0.3 }}>{d.title}</h3>
+        <h3 style={{ fontSize:17, fontWeight:700, color:"var(--text)", lineHeight:1.4, marginBottom:14, letterSpacing:-0.3 }}>{d.title}</h3>
         <div style={{ display:"flex", alignItems:"center", marginBottom:10 }}>
           <div style={{ flex:1 }}>
             <span style={{ fontSize:13, color:STANCE.pro.color, fontWeight:800 }}>👍 {fmt(d.pro)}</span>
             <span style={{ fontSize:12, color:"#93c5fd", fontWeight:600, marginLeft:4 }}>{proP}%</span>
           </div>
-          <div style={{ fontSize:11, color:"#d1d5db", fontWeight:600 }}>{fmt(total)}票</div>
+          <div style={{ fontSize:11, color:"var(--border-2)", fontWeight:600 }}>{fmt(total)}票</div>
           <div style={{ flex:1, textAlign:"right" }}>
             <span style={{ fontSize:12, color:"#fca5a5", fontWeight:600, marginRight:4 }}>{conP}%</span>
             <span style={{ fontSize:13, color:STANCE.con.color, fontWeight:800 }}>{fmt(d.con)} 👎</span>
@@ -1240,11 +1240,11 @@ function DebateCard({ d, dispatch }) {
             <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} size="sm" disabled={locked} />
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            <span style={{ fontSize:12, color:"#9ca3af" }}>💬 {fmt(d.commentCount)}</span>
+            <span style={{ fontSize:12, color:"var(--text-4)" }}>💬 {fmt(d.commentCount)}</span>
             <button onClick={e=>{e.stopPropagation();dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}});}}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:"#d1d5db" }}>🚩</button>
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:"var(--border-2)" }}>🚩</button>
             <button onClick={e=>{e.stopPropagation();dispatch({type:"SAVE",id:d.id});}}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:d.saved?STANCE.pro.color:"#d1d5db" }}>
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:d.saved?STANCE.pro.color:"var(--border-2)" }}>
               {d.saved?"⭐":"☆"}
             </button>
           </div>
@@ -1316,10 +1316,10 @@ function NewDebateModal({ dispatch }) {
     <div onClick={()=>dispatch({type:"TOGGLE_NEW"})}
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:16 }}>
       <div onClick={e=>e.stopPropagation()}
-        style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:520, padding:28, display:"flex", flexDirection:"column", gap:16, maxHeight:"90vh", overflowY:"auto" }}>
+        style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:520, padding:28, display:"flex", flexDirection:"column", gap:16, maxHeight:"90vh", overflowY:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <h3 style={{ fontWeight:800, fontSize:20, color:"#111827" }}>ディベートを作成</h3>
-          <button onClick={()=>dispatch({type:"TOGGLE_NEW"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"#9ca3af" }}>✕</button>
+          <h3 style={{ fontWeight:800, fontSize:20, color:"var(--text)" }}>ディベートを作成</h3>
+          <button onClick={()=>dispatch({type:"TOGGLE_NEW"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"var(--text-4)" }}>✕</button>
         </div>
         <div>
           <label style={labelStyle}>トピック</label>
@@ -1330,7 +1330,7 @@ function NewDebateModal({ dispatch }) {
         <div>
           <label style={labelStyle}>テーマ・問い <span style={{color:STANCE.con.color}}>*</span></label>
           <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：AIは社会にとって脅威か？" style={inputStyle} maxLength={120} />
-          <div style={{ fontSize:12, color:"#9ca3af", textAlign:"right", marginTop:2 }}>{title.length}/120</div>
+          <div style={{ fontSize:12, color:"var(--text-4)", textAlign:"right", marginTop:2 }}>{title.length}/120</div>
         </div>
         <div>
           <label style={labelStyle}>概要・背景 (オプション)</label>
@@ -1341,7 +1341,7 @@ function NewDebateModal({ dispatch }) {
         <div>
           <label style={labelStyle}>ハッシュタグ (任意)</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6, alignItems:"center",
-            border:"1px solid #e5e7eb", borderRadius:8, padding:"7px 10px", background:"#fafafa" }}>
+            border:"1px solid var(--border)", borderRadius:8, padding:"7px 10px", background:"var(--surface-2)" }}>
             {tags.map(t => (
               <span key={t} style={{ display:"inline-flex", alignItems:"center", gap:4,
                 background:STANCE.pro.bg, color:STANCE.pro.color, border:`1px solid ${STANCE.pro.border}`,
@@ -1353,15 +1353,15 @@ function NewDebateModal({ dispatch }) {
             ))}
             <input value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={onTagKey}
               placeholder={tags.length ? "" : "例：AI　Enterで追加"}
-              style={{ flex:1, minWidth:120, border:"none", outline:"none", background:"none", fontSize:14, fontFamily:"inherit", color:"#111827" }} />
+              style={{ flex:1, minWidth:120, border:"none", outline:"none", background:"none", fontSize:14, fontFamily:"inherit", color:"var(--text)" }} />
           </div>
           {suggestions.length > 0 && (
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
-              <span style={{ fontSize:11, color:"#9ca3af", alignSelf:"center" }}>候補:</span>
+              <span style={{ fontSize:11, color:"var(--text-4)", alignSelf:"center" }}>候補:</span>
               {suggestions.map(t => (
                 <button key={t} onClick={()=>addTag(t)}
-                  style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:99, padding:"2px 10px",
-                    fontSize:12, fontWeight:600, color:"#6b7280", cursor:"pointer", fontFamily:"inherit" }}>
+                  style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:99, padding:"2px 10px",
+                    fontSize:12, fontWeight:600, color:"var(--text-3)", cursor:"pointer", fontFamily:"inherit" }}>
                   #{t}
                 </button>
               ))}
@@ -1371,7 +1371,7 @@ function NewDebateModal({ dispatch }) {
         <div>
           <label style={labelStyle}>サムネイル画像 (任意)</label>
           {thumbnail ? (
-            <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid #e5e7eb" }}>
+            <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--border)" }}>
               <img src={thumbnail} alt="サムネイル" style={{ width:"100%", maxHeight:180, objectFit:"cover", display:"block" }} />
               <button onClick={()=>setThumbnail(null)}
                 style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
@@ -1379,8 +1379,8 @@ function NewDebateModal({ dispatch }) {
             </div>
           ) : (
             <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6,
-              padding:"20px 12px", border:"1.5px dashed #d1d5db", borderRadius:10, cursor:"pointer",
-              background:"#fafafa", color:"#9ca3af", fontSize:13, fontWeight:600 }}>
+              padding:"20px 12px", border:"1.5px dashed var(--border-2)", borderRadius:10, cursor:"pointer",
+              background:"var(--surface-2)", color:"var(--text-4)", fontSize:13, fontWeight:600 }}>
               <span style={{ fontSize:22 }}>🖼️</span>
               クリックして画像を選択
               <input type="file" accept="image/*" onChange={onFile} style={{ display:"none" }} />
@@ -1393,21 +1393,21 @@ function NewDebateModal({ dispatch }) {
             {[1,3,7,14,30].map(days => (
               <button key={days} onClick={()=>setDuration(days)}
                 style={{ padding:"6px 14px", borderRadius:99,
-                  border:`1.5px solid ${duration===days?STANCE.pro.border:"#e5e7eb"}`,
-                  background:duration===days?STANCE.pro.bg:"#fff",
-                  color:duration===days?STANCE.pro.color:"#6b7280",
+                  border:`1.5px solid ${duration===days?STANCE.pro.border:"var(--border)"}`,
+                  background:duration===days?STANCE.pro.bg:"var(--surface)",
+                  color:duration===days?STANCE.pro.color:"var(--text-3)",
                   fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 {days}日
               </button>
             ))}
           </div>
-          <p style={{ fontSize:11, color:"#9ca3af", marginTop:6 }}>期間終了後は自動で決着フェーズに移行します</p>
+          <p style={{ fontSize:11, color:"var(--text-4)", marginTop:6 }}>期間終了後は自動で決着フェーズに移行します</p>
         </div>
         <div style={{ background:STANCE.pro.bg, border:`1px solid ${STANCE.pro.border}`, borderRadius:10, padding:"12px 14px", fontSize:13, color:STANCE.pro.color, display:"flex", gap:8 }}>
           <span>💡</span><span>良いディベートテーマは「〇〇は△△か？」のように賛否を問える形が効果的です。</span>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:11, fontWeight:700,
-          color: overQuota ? STANCE.con.color : "#9ca3af" }}>
+          color: overQuota ? STANCE.con.color : "var(--text-4)" }}>
           <span>今月の作成数 {usedPosts}/{perk.debates}（{getBadge(myRep).label}）</span>
           {overQuota && <span>上限に達しました</span>}
         </div>
@@ -1439,21 +1439,21 @@ function ReportModal({ target, dispatch }) {
     <div onClick={()=>dispatch({type:"CLOSE_REPORT"})}
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}>
       <div onClick={e=>e.stopPropagation()}
-        style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:460, padding:26, display:"flex", flexDirection:"column", gap:16 }}>
+        style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:460, padding:26, display:"flex", flexDirection:"column", gap:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <h3 style={{ fontWeight:800, fontSize:18, color:"#111827" }}>🚩 通報する</h3>
-          <button onClick={()=>dispatch({type:"CLOSE_REPORT"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:"#9ca3af" }}>✕</button>
+          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>🚩 通報する</h3>
+          <button onClick={()=>dispatch({type:"CLOSE_REPORT"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:"var(--text-4)" }}>✕</button>
         </div>
-        <p style={{ fontSize:13, color:"#6b7280" }}>対象: <strong style={{ color:"#374151" }}>{target?.label}</strong></p>
+        <p style={{ fontSize:13, color:"var(--text-3)" }}>対象: <strong style={{ color:"var(--text-2)" }}>{target?.label}</strong></p>
         <div>
           <label style={labelStyle}>通報理由 <span style={{color:STANCE.con.color}}>*</span></label>
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             {REPORT_REASONS.map(r => (
               <button key={r} onClick={()=>setReason(r)}
                 style={{ textAlign:"left", padding:"9px 14px", borderRadius:10, cursor:"pointer", fontFamily:"inherit",
-                  border:`1.5px solid ${reason===r ? STANCE.con.border : "#e5e7eb"}`,
-                  background: reason===r ? STANCE.con.bg : "#fff",
-                  color: reason===r ? STANCE.con.color : "#374151",
+                  border:`1.5px solid ${reason===r ? STANCE.con.border : "var(--border)"}`,
+                  background: reason===r ? STANCE.con.bg : "var(--surface)",
+                  color: reason===r ? STANCE.con.color : "var(--text-2)",
                   fontWeight:700, fontSize:13 }}>
                 {reason===r ? "● " : "○ "}{r}
               </button>
@@ -1495,19 +1495,19 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
   const tabBtn = (id, label, badge) => (
     <button onClick={()=>setTab(id)}
       style={{ padding:"8px 16px", borderRadius:99, border:"none", cursor:"pointer", fontFamily:"inherit",
-        background: tab===id ? "#111827" : "#fff", color: tab===id ? "#fff" : "#374151",
+        background: tab===id ? "var(--btn-active)" : "var(--surface)", color: tab===id ? "#fff" : "var(--text-2)",
         fontWeight:700, fontSize:13, display:"flex", alignItems:"center", gap:6, boxShadow:"0 1px 2px rgba(0,0,0,.04)" }}>
       {label}{badge>0 && <span style={{ background:STANCE.con.color, color:"#fff", fontSize:10, borderRadius:99, padding:"1px 6px" }}>{badge}</span>}
     </button>
   );
-  const card = { background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:"14px 16px" };
+  const card = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:"14px 16px" };
   const delBtn = { background:STANCE.con.bg, color:STANCE.con.color, border:`1px solid ${STANCE.con.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" };
 
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
         <span style={{ fontSize:22 }}>🛡️</span>
-        <h2 style={{ fontSize:22, fontWeight:800, color:"#111827" }}>管理者ダッシュボード</h2>
+        <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>管理者ダッシュボード</h2>
         <button onClick={()=>dispatch({type:"SET_ADMIN",on:false})} style={{ ...btnGhost, marginLeft:"auto", padding:"7px 16px" }}>← 戻る</button>
       </div>
 
@@ -1515,7 +1515,7 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
       <div style={{ display:"flex", gap:12, marginBottom:18, flexWrap:"wrap" }}>
         {[["ディベート", debates.length, "#2563eb"],["通報 (未対応)", openReports, STANCE.con.color],["ユーザー", users.length, "#7c3aed"],["制限中", bannedUsers.length, "#b45309"]].map(([l,v,c])=>(
           <div key={l} style={{ ...card, flex:1, minWidth:120 }}>
-            <p style={{ fontSize:12, color:"#6b7280", fontWeight:600 }}>{l}</p>
+            <p style={{ fontSize:12, color:"var(--text-3)", fontWeight:600 }}>{l}</p>
             <p style={{ fontSize:26, fontWeight:800, color:c }}>{v}</p>
           </div>
         ))}
@@ -1532,8 +1532,8 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
           {debates.map(d => (
             <div key={d.id} style={{ ...card, display:"flex", alignItems:"center", gap:12 }}>
               <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ fontSize:14, fontWeight:700, color:"#111827", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
-                <p style={{ fontSize:12, color:"#9ca3af" }}>u/{d.author} ・ 💬{d.commentCount} ・ 👍{d.pro} 👎{d.con}</p>
+                <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
+                <p style={{ fontSize:12, color:"var(--text-4)" }}>u/{d.author} ・ 💬{d.commentCount} ・ 👍{d.pro} 👎{d.con}</p>
               </div>
               <button onClick={()=>{ if(confirm(`「${d.title}」を削除しますか？`)) dispatch({type:"ADMIN_DELETE_DEBATE",id:d.id}); }} style={delBtn}>削除</button>
             </div>
@@ -1543,21 +1543,21 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 
       {tab==="reports" && (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {reports.length===0 && <div style={{ ...card, textAlign:"center", color:"#9ca3af" }}>通報はありません</div>}
+          {reports.length===0 && <div style={{ ...card, textAlign:"center", color:"var(--text-4)" }}>通報はありません</div>}
           {[...reports].reverse().map(r => (
-            <div key={r.id} style={{ ...card, borderLeft:`3px solid ${r.status==="open"?STANCE.con.color:"#d1d5db"}` }}>
+            <div key={r.id} style={{ ...card, borderLeft:`3px solid ${r.status==="open"?STANCE.con.color:"var(--border-2)"}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                 <span style={{ fontSize:12, fontWeight:700, color:STANCE.con.color, background:STANCE.con.bg, padding:"2px 8px", borderRadius:99 }}>{r.reason}</span>
-                <span style={{ fontSize:12, color:"#6b7280" }}>{r.target?.label}</span>
+                <span style={{ fontSize:12, color:"var(--text-3)" }}>{r.target?.label}</span>
                 <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color: r.status==="open"?"#b45309":"#16a34a" }}>
                   {r.status==="open"?"未対応":r.status==="dismissed"?"却下":"対応済"}
                 </span>
               </div>
-              {r.detail && <p style={{ fontSize:13, color:"#374151", marginBottom:8 }}>{r.detail}</p>}
+              {r.detail && <p style={{ fontSize:13, color:"var(--text-2)", marginBottom:8 }}>{r.detail}</p>}
               {r.status==="open" && (
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>dispatch({type:"ADMIN_RESOLVE_REPORT",id:r.id,status:"resolved"})} style={{ ...delBtn, background:"#dcfce7", color:"#16a34a", borderColor:"#bbf7d0" }}>対応済みにする</button>
-                  <button onClick={()=>dispatch({type:"ADMIN_RESOLVE_REPORT",id:r.id,status:"dismissed"})} style={{ ...delBtn, background:"#f3f4f6", color:"#6b7280", borderColor:"#e5e7eb" }}>却下</button>
+                  <button onClick={()=>dispatch({type:"ADMIN_RESOLVE_REPORT",id:r.id,status:"resolved"})} style={{ ...delBtn, background:"var(--green-bg)", color:"#16a34a", borderColor:"#bbf7d0" }}>対応済みにする</button>
+                  <button onClick={()=>dispatch({type:"ADMIN_RESOLVE_REPORT",id:r.id,status:"dismissed"})} style={{ ...delBtn, background:"var(--surface-3)", color:"var(--text-3)", borderColor:"var(--border)" }}>却下</button>
                 </div>
               )}
             </div>
@@ -1574,13 +1574,13 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
               <div key={u.author} style={{ ...card, display:"flex", alignItems:"center", gap:12, opacity: banned?0.6:1 }}>
                 <span style={{ fontSize:16 }}>{b.emoji}</span>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:14, fontWeight:700, color:"#111827" }}>u/{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700 }}>🚫 制限中</span>}</p>
-                  <p style={{ fontSize:12, color:"#9ca3af" }}>投稿 {u.posts} ・ コメント {u.comments} ・ ♥ {u.likes}</p>
+                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)" }}>u/{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700 }}>🚫 制限中</span>}</p>
+                  <p style={{ fontSize:12, color:"var(--text-4)" }}>投稿 {u.posts} ・ コメント {u.comments} ・ ♥ {u.likes}</p>
                 </div>
                 <button onClick={()=>dispatch({type:"ADMIN_BAN",author:u.author})}
                   style={banned
-                    ? { ...delBtn, background:"#dcfce7", color:"#16a34a", borderColor:"#bbf7d0" }
-                    : { ...delBtn, background:"#fef3c7", color:"#b45309", borderColor:"#fde68a" }}>
+                    ? { ...delBtn, background:"var(--green-bg)", color:"#16a34a", borderColor:"#bbf7d0" }
+                    : { ...delBtn, background:"var(--amber-bg)", color:"#b45309", borderColor:"#fde68a" }}>
                   {banned ? "制限解除" : "利用制限"}
                 </button>
               </div>
@@ -1594,10 +1594,10 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 
 // ─── Shared styles ────────────────────────────────────────────────
 const btnPrimary = { background:STANCE.pro.color, color:"#fff", border:"none", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" };
-const btnGhost = { background:"none", border:"1.5px solid #e5e7eb", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", color:"#374151", fontFamily:"inherit" };
-const cActBtn = { background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#9ca3af", fontWeight:600, padding:"3px 7px", borderRadius:6, fontFamily:"inherit" };
-const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"#374151", marginBottom:6 };
-const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid #e5e7eb", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"#fafafa", color:"#111827" };
+const btnGhost = { background:"none", border:"1.5px solid var(--border)", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", color:"var(--text-2)", fontFamily:"inherit" };
+const cActBtn = { background:"none", border:"none", cursor:"pointer", fontSize:12, color:"var(--text-4)", fontWeight:600, padding:"3px 7px", borderRadius:6, fontFamily:"inherit" };
+const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"var(--text-2)", marginBottom:6 };
+const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid var(--border)", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"var(--surface-2)", color:"var(--text)" };
 
 // ─── App ──────────────────────────────────────────────────────────
 // 画面幅でモバイル判定するフック
@@ -1693,27 +1693,60 @@ export default function App() {
   // ナビゲーション時はドロワーを閉じる
   useEffect(() => { setDrawerOpen(false); }, [activeDebate, activeUser, activeAdmin, activeTopic]);
 
+  // ── テーマ (ライト / ダーク) ──────────────────────────────
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "light";
+    const saved = localStorage.getItem("split-theme");
+    if (saved === "light" || saved === "dark") return saved;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("split-theme", theme);
+  }, [theme]);
+  const toggleTheme = useCallback(() => setTheme(t => (t === "dark" ? "light" : "dark")), []);
+
   return (
     <AppContext.Provider value={{ dispatch, debates, myRep }}>
-    <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"#f8fafc", color:"#111827" }}>
+    <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        :root {
+          --bg: #f8fafc; --surface: #ffffff; --surface-2: #f9fafb; --surface-3: #f3f4f6;
+          --border: #e5e7eb; --border-2: #d1d5db;
+          --text: #111827; --text-2: #374151; --text-3: #6b7280; --text-4: #9ca3af;
+          --btn-active: #111827;
+          --pro-bg: #eff6ff; --pro-light: #f0f7ff; --con-bg: #fff5f5; --con-light: #fff8f8;
+          --rose-bg: #fff1f2; --green-bg: #dcfce7; --amber-bg: #fef3c7;
+          --violet-1: #f5f3ff; --violet-2: #fdf4ff; --violet-border: #e9d5ff;
+        }
+        :root[data-theme="dark"] {
+          --bg: #0b1120; --surface: #1a2233; --surface-2: #141c2b; --surface-3: #232c3d;
+          --border: #2c3648; --border-2: #3a4658;
+          --text: #f1f5f9; --text-2: #cbd5e1; --text-3: #94a3b8; --text-4: #748196;
+          --btn-active: #3b82f6;
+          --pro-bg: rgba(59,130,246,.20); --pro-light: rgba(59,130,246,.12);
+          --con-bg: rgba(244,63,94,.18); --con-light: rgba(244,63,94,.10);
+          --rose-bg: rgba(244,63,94,.20); --green-bg: rgba(34,197,94,.20); --amber-bg: rgba(245,158,11,.20);
+          --violet-1: rgba(124,58,237,.18); --violet-2: rgba(168,85,247,.12); --violet-border: rgba(139,92,246,.38);
+        }
+        html { color-scheme: light dark; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f8fafc; }
+        body { background: var(--bg); transition: background .25s; }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
-        textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px #eff6ff; outline: none; }
+        textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px var(--pro-bg); outline: none; }
       `}</style>
 
-      <header style={{ position:"sticky", top:0, zIndex:100, background:"#fff", borderBottom:"1px solid #e5e7eb" }}>
+      <header style={{ position:"sticky", top:0, zIndex:100, background:"var(--surface)", borderBottom:"1px solid var(--border)" }}>
         <div style={{ maxWidth:1160, margin:"0 auto", height: isMobile ? "auto" : 56,
           display:"flex", alignItems:"center", padding: isMobile ? "10px 14px" : "0 24px",
           gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
           {isMobile && (
             <button onClick={()=>setDrawerOpen(true)} title="メニュー"
-              style={{ background:"none", border:"1.5px solid #e5e7eb", borderRadius:10, width:38, height:38,
-                fontSize:18, cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"#374151" }}>☰</button>
+              style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
+                fontSize:18, cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)" }}>☰</button>
           )}
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
             onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}>
@@ -1725,27 +1758,31 @@ export default function App() {
                 <span style={{ color:"#fff", fontWeight:900, fontSize:13 }}>p</span>
               </div>
             </div>
-            <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"#111827" }}>Split</span>
+            <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"var(--text)" }}>Split</span>
             {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
-              const m = { local:["⚪ ローカル","#6b7280","#f3f4f6"], loading:["⏳ 接続中","#b45309","#fef3c7"], connected:["🟢 DB接続","#16a34a","#dcfce7"], error:["🔴 接続失敗","#dc2626","#fee2e2"] }[dbStatus];
+              const m = { local:["⚪ ローカル","var(--text-3)","var(--surface-3)"], loading:["⏳ 接続中","#b45309","var(--amber-bg)"], connected:["🟢 DB接続","#16a34a","var(--green-bg)"], error:["🔴 接続失敗","#dc2626","#fee2e2"] }[dbStatus];
               return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700 }}>{m[0]}</span>;
             })()}
           </div>
           <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#9ca3af", fontSize:14, pointerEvents:"none" }}>🔍</span>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", fontSize:14, pointerEvents:"none" }}>🔍</span>
             <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
               placeholder="ディベートを検索…"
-              style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid #e5e7eb", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"#f9fafb", color:"#111827" }} />
+              style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid var(--border)", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)" }} />
           </div>
           <div style={{ display:"flex", gap: isMobile ? 8 : 10, flexShrink:0, alignItems:"center", marginLeft: isMobile ? "auto" : 0 }}>
+            <button onClick={toggleTheme}
+              title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+              style={{ background:"none", color:"var(--text-2)",
+                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>{theme === "dark" ? "☀️" : "🌙"}</button>
             <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
               title="管理者ダッシュボード"
-              style={{ background: activeAdmin ? "#111827" : "none", color: activeAdmin ? "#fff" : "#374151",
-                border:"1.5px solid #e5e7eb", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>🛡️</button>
+              style={{ background: activeAdmin ? "var(--btn-active)" : "none", color: activeAdmin ? "#fff" : "var(--text-2)",
+                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>🛡️</button>
             <button onClick={()=>dispatch({type:"TOGGLE_NEW"})}
               style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
-            {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"#374151" }}>あ</div>}
+            {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"var(--text-2)" }}>あ</div>}
           </div>
         </div>
       </header>
@@ -1756,53 +1793,53 @@ export default function App() {
         {(!isMobile || drawerOpen) && (<>
           {isMobile && <div onClick={()=>setDrawerOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", zIndex:150 }} />}
           <aside style={ isMobile
-            ? { position:"fixed", top:0, left:0, bottom:0, width:280, maxWidth:"82vw", background:"#f8fafc", zIndex:151, padding:"16px 16px 40px", overflowY:"auto", boxShadow:"2px 0 24px rgba(0,0,0,.12)" }
+            ? { position:"fixed", top:0, left:0, bottom:0, width:280, maxWidth:"82vw", background:"var(--bg)", zIndex:151, padding:"16px 16px 40px", overflowY:"auto", boxShadow:"2px 0 24px rgba(0,0,0,.12)" }
             : { width:210, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start" } }>
           {isMobile && (
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <span style={{ fontWeight:800, fontSize:16, color:"#111827" }}>メニュー</span>
-              <button onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"#6b7280" }}>✕</button>
+              <span style={{ fontWeight:800, fontSize:16, color:"var(--text)" }}>メニュー</span>
+              <button onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"var(--text-3)" }}>✕</button>
             </div>
           )}
-          <p style={{ fontSize:11, fontWeight:700, color:"#9ca3af", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
+          <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
           {[{id:null,name:"すべて",icon:"🌐"}, ...TOPICS].map(t=>(
             <button key={t.id??"all"} onClick={()=>dispatch({type:"SET_TOPIC",id:t.id})}
               style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", borderRadius:8, border:"none",
-                background:activeTopic===t.id?STANCE.pro.bg:"none", color:activeTopic===t.id?STANCE.pro.color:"#374151",
+                background:activeTopic===t.id?STANCE.pro.bg:"none", color:activeTopic===t.id?STANCE.pro.color:"var(--text-2)",
                 fontWeight:activeTopic===t.id?700:400, fontSize:14, cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginBottom:2, transition:"background .1s" }}>
               <span>{t.icon}</span><span style={{flex:1}}>{t.name}</span>
-              {t.members && <span style={{ fontSize:11, color:"#9ca3af" }}>{t.members}</span>}
+              {t.members && <span style={{ fontSize:11, color:"var(--text-4)" }}>{t.members}</span>}
             </button>
           ))}
 
           {/* User reputation card */}
-          <div style={{ marginTop:20, padding:"14px 16px", background:"#fff", border:"1px solid #e5e7eb", borderRadius:12 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:"#9ca3af", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのレピュテーション</p>
+          <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのレピュテーション</p>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
               <span style={{ fontSize:20 }}>{myBadge.emoji}</span>
               <div>
                 <p style={{ fontSize:13, fontWeight:800, color:myBadge.color }}>{myBadge.label}</p>
-                <p style={{ fontSize:11, color:"#9ca3af" }}>Rep: {myRep}</p>
+                <p style={{ fontSize:11, color:"var(--text-4)" }}>Rep: {myRep}</p>
               </div>
             </div>
             {nextBadge && (
               <>
-                <div style={{ width:"100%", height:5, background:"#f3f4f6", borderRadius:99, overflow:"hidden", marginBottom:4 }}>
+                <div style={{ width:"100%", height:5, background:"var(--surface-3)", borderRadius:99, overflow:"hidden", marginBottom:4 }}>
                   <div style={{ width:`${(myRep/nextBadge.min)*100}%`, height:"100%", background:myBadge.color, transition:"width .5s" }} />
                 </div>
-                <p style={{ fontSize:10, color:"#9ca3af" }}>
+                <p style={{ fontSize:10, color:"var(--text-4)" }}>
                   あと <strong style={{ color:nextBadge.color }}>{nextBadge.min - myRep}</strong> で「{nextBadge.label}」
                 </p>
               </>
             )}
-            <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid #f3f4f6", fontSize:10, color:"#9ca3af", lineHeight:1.7 }}>
-              <div>今月の作成: <strong style={{ color:"#374151" }}>{myUsage(debates).posts}/{perkOf(myRep).debates === 9999 ? "∞" : perkOf(myRep).debates}</strong></div>
-              <div>今月のコメント: <strong style={{ color:"#374151" }}>{myUsage(debates).comments}/{perkOf(myRep).comments === 9999 ? "∞" : perkOf(myRep).comments}</strong></div>
+            <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid var(--surface-3)", fontSize:10, color:"var(--text-4)", lineHeight:1.7 }}>
+              <div>今月の作成: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates).posts}/{perkOf(myRep).debates === 9999 ? "∞" : perkOf(myRep).debates}</strong></div>
+              <div>今月のコメント: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates).comments}/{perkOf(myRep).comments === 9999 ? "∞" : perkOf(myRep).comments}</strong></div>
             </div>
           </div>
 
-          <div style={{ marginTop:14, padding:"14px 16px", background:"#fff", border:"1px solid #e5e7eb", borderRadius:12 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:"#9ca3af", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>凡例</p>
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>凡例</p>
             {["pro","con"].map(s=>(
               <div key={s} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:s==="pro"?8:0 }}>
                 <div style={{ width:28, height:6, borderRadius:99, background:STANCE[s].bar }} />
@@ -1824,7 +1861,7 @@ export default function App() {
             <>
               {activeTag && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                  <span style={{ fontSize:13, color:"#6b7280" }}>タグで絞り込み中:</span>
+                  <span style={{ fontSize:13, color:"var(--text-3)" }}>タグで絞り込み中:</span>
                   <span style={{ display:"inline-flex", alignItems:"center", gap:6, background:STANCE.pro.bg,
                     color:STANCE.pro.color, border:`1px solid ${STANCE.pro.border}`, borderRadius:99,
                     padding:"3px 12px", fontSize:13, fontWeight:700 }}>
@@ -1834,20 +1871,20 @@ export default function App() {
                   </span>
                 </div>
               )}
-              <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:10, padding:"10px 14px",
+              <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px",
                 display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
                   {[["hot","🔥 人気"],["new","✨ 新着"],["closing","⏱ 締切間近"],["discussion","💬 議論中"]].map(([s,l])=>(
                     <button key={s} onClick={()=>dispatch({type:"SET_SORT",sort:s})}
                       style={{ padding:"6px 12px", borderRadius:99, border:"none",
-                        background:sort===s?STANCE.pro.bg:"none", color:sort===s?STANCE.pro.color:"#6b7280",
+                        background:sort===s?STANCE.pro.bg:"none", color:sort===s?STANCE.pro.color:"var(--text-3)",
                         fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all .1s" }}>{l}</button>
                   ))}
                 </div>
-                <span style={{ fontSize:13, color:"#9ca3af" }}>{visible.length} 件のディベート</span>
+                <span style={{ fontSize:13, color:"var(--text-4)" }}>{visible.length} 件のディベート</span>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-                {visible.length===0 && <div style={{ textAlign:"center", padding:"48px", color:"#9ca3af", fontSize:15 }}>ディベートが見つかりません</div>}
+                {visible.length===0 && <div style={{ textAlign:"center", padding:"48px", color:"var(--text-4)", fontSize:15 }}>ディベートが見つかりません</div>}
                 {visible.map(d=><DebateCard key={d.id} d={d} dispatch={dispatch}/>)}
               </div>
             </>
@@ -1859,8 +1896,8 @@ export default function App() {
             ? { width:"100%", display:"flex", flexDirection:"column", gap:16 }
             : { width:270, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start", display:"flex", flexDirection:"column", gap:16 } }>
             {/* 人気ユーザー */}
-            <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"#111827" }}>🔥 人気ユーザー</h4>
+            <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>🔥 人気ユーザー</h4>
               {pops.map((p, i) => {
                 const medal = ["🥇","🥈","🥉"][i] || `${i+1}`;
                 const b = getBadge(repOf(p.author));
@@ -1869,48 +1906,48 @@ export default function App() {
                     style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"6px 4px",
                       background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                     <span style={{ fontSize:14, width:20, textAlign:"center", flexShrink:0 }}>{medal}</span>
-                    <span style={{ fontSize:13, fontWeight:700, color:"#111827", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>u/{p.author}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"var(--text)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>u/{p.author}</span>
                     <span style={{ fontSize:12 }}>{b.emoji}</span>
                     <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, flexShrink:0 }}>♥ {fmt(p.likes)}</span>
                   </button>
                 );
               })}
             </div>
-            <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"#111827" }}>✦ Splitとは</h4>
+            <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>✦ Splitとは</h4>
               {[["🎯","テーマを選ぶ","賛否を問えるトピックを探す"],["👍👎","立場を表明","賛成か反対かを明確にする"],["💬","根拠を語る","なぜそう思うかをコメントで"],["📊","分布を見る","リアルタイムで賛否が動く"],["🏆","決着を見る","期間終了で勝敗が確定"]].map(([icon,t,desc])=>(
                 <div key={t} style={{ display:"flex", gap:10, marginBottom:10 }}>
                   <span style={{ fontSize:15, flexShrink:0 }}>{icon}</span>
-                  <div><p style={{ fontSize:13, fontWeight:600, color:"#111827" }}>{t}</p><p style={{ fontSize:12, color:"#6b7280" }}>{desc}</p></div>
+                  <div><p style={{ fontSize:13, fontWeight:600, color:"var(--text)" }}>{t}</p><p style={{ fontSize:12, color:"var(--text-3)" }}>{desc}</p></div>
                 </div>
               ))}
             </div>
 
             {/* Badge guide */}
-            <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"#111827" }}>🏅 バッジ一覧</h4>
+            <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"var(--text)" }}>🏅 バッジ一覧</h4>
               {BADGES.map(b => (
                 <div key={b.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
                   <span style={{ fontSize:14 }}>{b.emoji}</span>
                   <span style={{ fontSize:12, fontWeight:700, color:b.color }}>{b.label}</span>
-                  <span style={{ fontSize:11, color:"#9ca3af", marginLeft:"auto" }}>{b.min}+ Rep</span>
+                  <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>{b.min}+ Rep</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ border:"1px solid #e5e7eb", borderRadius:12, overflow:"hidden" }}>
+            <div style={{ border:"1px solid var(--border)", borderRadius:12, overflow:"hidden" }}>
               <div style={{ display:"flex", height:6 }}>
                 <div style={{ flex:totalPro, background:STANCE.pro.bar }} />
                 <div style={{ flex:totalCon, background:STANCE.con.bar }} />
               </div>
               <div style={{ padding:16 }}>
-                <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"#111827" }}>📊 全体の傾向</h4>
+                <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>📊 全体の傾向</h4>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:10 }}>
                   <span style={{ color:STANCE.pro.color, fontWeight:700 }}>👍 賛成 {gProP}%</span>
                   <span style={{ color:STANCE.con.color, fontWeight:700 }}>👎 反対 {gConP}%</span>
                 </div>
                 <StanceBar pro={totalPro} con={totalCon} height={10} />
-                <p style={{ fontSize:12, color:"#9ca3af", marginTop:8 }}>全 {debates.length} ディベートの合計</p>
+                <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>全 {debates.length} ディベートの合計</p>
               </div>
             </div>
           </aside>
