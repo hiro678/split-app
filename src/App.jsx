@@ -345,7 +345,7 @@ function reducer(state, action) {
       })};
     })};
     case "SET_SORT": return { ...state, sort: action.sort };
-    case "SET_TOPIC": return { ...state, activeTopic: action.id, activeTag: null };
+    case "SET_TOPIC": return { ...state, activeTopic: action.id, activeTag: null, activeDebate: null, activeUser: null, activeAdmin: false };
     case "SET_TAG": return { ...state, activeTag: action.tag, activeDebate: null, activeUser: null };
     case "SET_ACTIVE": return { ...state, activeDebate: action.debate, activeUser: null };
     case "SET_USER": return { ...state, activeUser: action.author, activeDebate: null };
@@ -1600,6 +1600,19 @@ const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"#37415
 const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid #e5e7eb", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"#fafafa", color:"#111827" };
 
 // ─── App ──────────────────────────────────────────────────────────
+// 画面幅でモバイル判定するフック
+function useIsMobile(breakpoint = 820) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = e => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function App() {
   const [state, rawDispatch] = useReducer(reducer, {
     debates: INIT_DEBATES, sort:"hot", activeTopic:null, activeDebate:null, showNew:false, search:"",
@@ -1675,6 +1688,11 @@ export default function App() {
   const myBadge = getBadge(myRep);
   const nextBadge = BADGES.find(b => b.min > myRep);
 
+  const isMobile = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // ナビゲーション時はドロワーを閉じる
+  useEffect(() => { setDrawerOpen(false); }, [activeDebate, activeUser, activeAdmin, activeTopic]);
+
   return (
     <AppContext.Provider value={{ dispatch, debates, myRep }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"#f8fafc", color:"#111827" }}>
@@ -1689,7 +1707,14 @@ export default function App() {
       `}</style>
 
       <header style={{ position:"sticky", top:0, zIndex:100, background:"#fff", borderBottom:"1px solid #e5e7eb" }}>
-        <div style={{ maxWidth:1160, margin:"0 auto", height:56, display:"flex", alignItems:"center", padding:"0 24px", gap:16 }}>
+        <div style={{ maxWidth:1160, margin:"0 auto", height: isMobile ? "auto" : 56,
+          display:"flex", alignItems:"center", padding: isMobile ? "10px 14px" : "0 24px",
+          gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+          {isMobile && (
+            <button onClick={()=>setDrawerOpen(true)} title="メニュー"
+              style={{ background:"none", border:"1.5px solid #e5e7eb", borderRadius:10, width:38, height:38,
+                fontSize:18, cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"#374151" }}>☰</button>
+          )}
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
             onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}>
             <div style={{ width:32, height:32, borderRadius:9, overflow:"hidden", display:"flex", flexShrink:0 }}>
@@ -1701,32 +1726,44 @@ export default function App() {
               </div>
             </div>
             <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"#111827" }}>Split</span>
-            <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>
+            {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
               const m = { local:["⚪ ローカル","#6b7280","#f3f4f6"], loading:["⏳ 接続中","#b45309","#fef3c7"], connected:["🟢 DB接続","#16a34a","#dcfce7"], error:["🔴 接続失敗","#dc2626","#fee2e2"] }[dbStatus];
               return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700 }}>{m[0]}</span>;
             })()}
           </div>
-          <div style={{ flex:1, maxWidth:520, position:"relative" }}>
+          <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
             <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#9ca3af", fontSize:14, pointerEvents:"none" }}>🔍</span>
             <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
               placeholder="ディベートを検索…"
               style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid #e5e7eb", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"#f9fafb", color:"#111827" }} />
           </div>
-          <div style={{ display:"flex", gap:10, flexShrink:0, alignItems:"center" }}>
+          <div style={{ display:"flex", gap: isMobile ? 8 : 10, flexShrink:0, alignItems:"center", marginLeft: isMobile ? "auto" : 0 }}>
             <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
               title="管理者ダッシュボード"
               style={{ background: activeAdmin ? "#111827" : "none", color: activeAdmin ? "#fff" : "#374151",
-                border:"1.5px solid #e5e7eb", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit" }}>🛡️</button>
-            <button onClick={()=>dispatch({type:"TOGGLE_NEW"})} style={btnPrimary}>+ ディベート作成</button>
-            <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"#374151" }}>あ</div>
+                border:"1.5px solid #e5e7eb", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>🛡️</button>
+            <button onClick={()=>dispatch({type:"TOGGLE_NEW"})}
+              style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
+            {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"#374151" }}>あ</div>}
           </div>
         </div>
       </header>
 
-      <div style={{ maxWidth:1160, margin:"0 auto", padding:"28px 24px", display:"flex", gap:24 }}>
-        {/* Left sidebar */}
-        <aside style={{ width:210, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start" }}>
+      <div style={{ maxWidth:1160, margin:"0 auto", padding: isMobile ? "16px 14px 40px" : "28px 24px",
+        display:"flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 24 }}>
+        {/* Left sidebar: PCはサイドバー / スマホはハンバーガーで開くドロワー */}
+        {(!isMobile || drawerOpen) && (<>
+          {isMobile && <div onClick={()=>setDrawerOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", zIndex:150 }} />}
+          <aside style={ isMobile
+            ? { position:"fixed", top:0, left:0, bottom:0, width:280, maxWidth:"82vw", background:"#f8fafc", zIndex:151, padding:"16px 16px 40px", overflowY:"auto", boxShadow:"2px 0 24px rgba(0,0,0,.12)" }
+            : { width:210, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start" } }>
+          {isMobile && (
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <span style={{ fontWeight:800, fontSize:16, color:"#111827" }}>メニュー</span>
+              <button onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"#6b7280" }}>✕</button>
+            </div>
+          )}
           <p style={{ fontSize:11, fontWeight:700, color:"#9ca3af", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
           {[{id:null,name:"すべて",icon:"🌐"}, ...TOPICS].map(t=>(
             <button key={t.id??"all"} onClick={()=>dispatch({type:"SET_TOPIC",id:t.id})}
@@ -1774,6 +1811,7 @@ export default function App() {
             ))}
           </div>
         </aside>
+        </>)}
 
         <main style={{ flex:1, minWidth:0 }}>
           {activeAdmin ? (
@@ -1817,7 +1855,9 @@ export default function App() {
         </main>
 
         {!activeDebate && !activeUser && !activeAdmin && (
-          <aside style={{ width:270, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start", display:"flex", flexDirection:"column", gap:16 }}>
+          <aside style={ isMobile
+            ? { width:"100%", display:"flex", flexDirection:"column", gap:16 }
+            : { width:270, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start", display:"flex", flexDirection:"column", gap:16 } }>
             {/* 人気ユーザー */}
             <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, padding:16 }}>
               <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"#111827" }}>🔥 人気ユーザー</h4>
