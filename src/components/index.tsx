@@ -1,6 +1,6 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo, useRef } from "react";
-import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound } from "../ui/Icn";
+import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated } from "../lib/logic";
 import { AppContext } from "../context";
@@ -911,11 +911,14 @@ export function DebateDetail({ d, allDebates, dispatch }) {
         <div style={{ padding:"24px 28px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
             <span style={{ fontSize:12, background:"var(--surface-3)", color:"var(--text-2)", padding:"3px 10px", borderRadius:99, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5 }}>{topic && <Icn icon={topic.Icon} size={13}/>} {topic?.name}</span>
-            <button onClick={()=>dispatch({type:"SET_USER",author:d.author})}
-              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"var(--text-4)", fontFamily:"inherit" }}>@{d.author}</button>
-            <span style={{ fontSize:12, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
-            <UserBadge author={d.author} />
             <StatusBadge status={d.status} deadline={d.deadline} />
+          </div>
+          {/* 作成者（ランク・肩書きはディベートに紐づけない。@名はクリックで本人ページへ） */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14, fontSize:12, color:"var(--text-4)", flexWrap:"wrap" }}>
+            <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:"var(--surface-3)", color:"var(--text-3)", padding:"2px 8px", borderRadius:99, fontWeight:700 }}><Icn icon={PenLine} size={11}/> 作成者</span>
+            <button onClick={()=>dispatch({type:"SET_USER",author:d.author})}
+              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12.5, fontWeight:700, color:"var(--text-2)", fontFamily:"inherit" }}>@{d.author}</button>
+            <span>・ {ago(d.createdAt)}</span>
           </div>
           <h2 style={{ fontSize:24, fontWeight:800, color:"var(--text)", lineHeight:1.3, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
           <p style={{ fontSize:15, color:"var(--text-2)", lineHeight:1.8, marginBottom:16 }}>{d.description}</p>
