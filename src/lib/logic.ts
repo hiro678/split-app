@@ -62,8 +62,11 @@ export const computeMyRep = (debates, me) => {
 /** @param {number} rep */
 export const perkOf = (rep) => RANK_PERKS[getBadge(rep).id];
 
-/** @param {number} n */
-export const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+"k" : String(n);
+/** @param {number} n 桁区切り（例: 4300 → "4,300"） */
+export const fmt = (n) => {
+  const num = Number(n);
+  return Number.isFinite(num) ? Math.round(num).toLocaleString("en-US") : String(n);
+};
 
 /** @param {Date|number} d */
 export const ago = d => {
