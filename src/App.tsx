@@ -64,14 +64,15 @@ export default function App() {
   const [localAvatar, setLocalAvatar] = useState<string | null>(() =>
     typeof window !== "undefined" ? localStorage.getItem("split-avatar") : null);
   const myAvatar = isSupabaseConfigured ? ((profile as any)?.avatar ?? null) : localAvatar;
-  const setAvatar = useCallback((id: string) => {
+  const setAvatar = useCallback((id: string | null) => {
     if (isSupabaseConfigured) {
       setProfile((p: any) => p ? { ...p, avatar: id } : p);
       const uid = sessionRef.current?.user?.id;
       if (uid) updateAvatar(uid, id);
     } else {
       setLocalAvatar(id);
-      localStorage.setItem("split-avatar", id);
+      if (id) localStorage.setItem("split-avatar", id);
+      else localStorage.removeItem("split-avatar");
     }
   }, []);
 

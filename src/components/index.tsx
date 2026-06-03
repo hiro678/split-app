@@ -777,6 +777,18 @@ export function UserPage({ author, dispatch }) {
           <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", marginBottom:4 }}>アイコンを選ぶ</h3>
           <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:14 }}>ランクが上がると選べるアイコンが増えます（実績解放）。</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(84px, 1fr))", gap:10 }}>
+            {(() => {
+              const selected = !myAvatar;
+              return (
+                <button onClick={()=>setAvatar(null)} title="デフォルト（頭文字アイコン）"
+                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"10px 6px", borderRadius:12,
+                    border:`2px solid ${selected ? STANCE.pro.color : "var(--border)"}`,
+                    background: selected ? STANCE.pro.bg : "var(--surface-2)", cursor:"pointer", fontFamily:"inherit" }}>
+                  <div style={{ lineHeight:0 }}><Avatar id={null} size={52} fallback={author[0].toUpperCase()} /></div>
+                  <span style={{ fontSize:11, fontWeight:700, color: selected ? STANCE.pro.color : "var(--text-2)" }}>デフォルト</span>
+                </button>
+              );
+            })()}
             {AVATARS.map(a => {
               const unlocked = badge.tier >= a.unlockTier;
               const selected = myAvatar === a.id;

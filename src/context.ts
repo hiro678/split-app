@@ -8,7 +8,7 @@ export type AppCtx = {
   me: string | null;
   isAuthed: boolean;
   myAvatar?: string | null;
-  setAvatar?: (id: string) => void;
+  setAvatar?: (id: string | null) => void;
 };
 
 // ─── App context (dispatch / debates / 動的rep を配布) ────────────
