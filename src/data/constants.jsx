@@ -25,6 +25,7 @@ export const BADGES = [
 ];
 
 // 仮想ユーザーのレピュテーション
+/** @type {Record<string, number>} */
 export const USER_REP = {
   "economist_a": 423, "futurist_x": 156, "policy_z": 89, "academic_u": 612,
   "optimist_s": 45, "futurist_c": 287, "artist_r": 134, "dev_p": 38,
@@ -40,6 +41,7 @@ export const USER_REP = {
 };
 
 // ランク別の月間クォータ（badge.id をキーに）
+/** @type {Record<string, { debates: number, comments: number }>} */
 export const RANK_PERKS = {
   newbie:  { debates: 2,  comments: 10 },
   active:  { debates: 5,  comments: 30 },

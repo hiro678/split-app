@@ -13,6 +13,7 @@ import {
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer } from "./lib/logic";
 import { AppContext } from "./context";
+import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
 
 // 行内アイコン（テキストと縦中央揃え）。color は currentColor 継承でテーマ追従。
 const Icn = ({ icon: I, size = 14, fill = "none", style, ...rest }) => (
@@ -435,10 +436,6 @@ function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) 
   );
 }
 
-const replyBtn = {
-  background:"var(--surface)", border:"1.5px solid", borderRadius:99,
-  padding:"4px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
-};
 
 // ─── Comment section: 全スレッドを時系列で表示 ───────────────────
 function SplitComments({ d, dispatch }) {
@@ -1243,13 +1240,7 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
   );
 }
 
-// ─── Shared styles ────────────────────────────────────────────────
-const btnPrimary = { background:STANCE.pro.color, color:"#fff", border:"none", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" };
-const btnGhost = { background:"none", border:"1.5px solid var(--border)", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", color:"var(--text-2)", fontFamily:"inherit" };
-const cActBtn = { background:"none", border:"none", cursor:"pointer", fontSize:12, color:"var(--text-4)", fontWeight:600, padding:"3px 7px", borderRadius:6, fontFamily:"inherit" };
-const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"var(--text-2)", marginBottom:6 };
-const menuItem = { display:"flex", alignItems:"center", gap:8, width:"100%", textAlign:"left", padding:"8px 12px", background:"none", border:"none", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600, color:"var(--text-2)", fontFamily:"inherit" };
-const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid var(--border)", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"var(--surface-2)", color:"var(--text)" };
+// ─── Shared styles は src/styles.js に分離 ─────────────────────────
 
 // ─── Hero（初見向け説明バナー） ───────────────────────────────────
 function HeroBanner({ onDismiss }) {

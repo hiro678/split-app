@@ -1,13 +1,20 @@
+// @ts-check
 // 純粋ロジック（集計・整形・reducer）
+/** @typedef {import("../types").Debate} Debate */
+/** @typedef {import("../types").CommentNode} CommentNode */
+/** @typedef {import("../types").Reply} Reply */
 import { BADGES, USER_REP, RANK_PERKS } from "../data/constants";
 
+/** @param {number} rep */
 export const getBadge = (rep) => {
   return [...BADGES].reverse().find(b => rep >= b.min) || BADGES[0];
 };
 
+/** @param {string} author */
 export const repOf = (author) => USER_REP[author] ?? 0;
 
 // ─── Likes / 人気ユーザー ─────────────────────────────────────────
+/** @param {Debate[]} debates @returns {(CommentNode | Reply)[]} */
 export const allBubbles = (debates) => {
   const out = [];
   for (const d of debates) {
@@ -21,9 +28,11 @@ export const allBubbles = (debates) => {
   return out;
 };
 
+/** @param {string} author @param {Debate[]} debates @returns {number} */
 export const likesReceived = (author, debates) =>
   allBubbles(debates).filter(b => b.author === author).reduce((s, b) => s + (b.score || 0), 0);
 
+/** @param {Debate[]} debates @param {number} [limit] */
 export const popularUsers = (debates, limit = 5) => {
   const map = {};
   for (const b of allBubbles(debates)) map[b.author] = (map[b.author] || 0) + (b.score || 0);
@@ -34,12 +43,14 @@ export const popularUsers = (debates, limit = 5) => {
 };
 
 // ─── ランク / モチベーション ──────────────────────────────────────
+/** @param {Debate[]} debates @param {string|null} me */
 export const myUsage = (debates, me) => ({
   posts: debates.filter(d => d.author === me).length,
   comments: allBubbles(debates).filter(b => b.author === me).length,
 });
 
 // 自分の rep は活動で動的に増える（投稿/コメント/被いいね）
+/** @param {Debate[]} debates @param {string|null} me @returns {number} */
 export const computeMyRep = (debates, me) => {
   if (!me) return 0;
   const base = USER_REP[me] ?? 0;
@@ -48,17 +59,21 @@ export const computeMyRep = (debates, me) => {
   return base + posts * 30 + comments * 10 + likes * 5;
 };
 
+/** @param {number} rep */
 export const perkOf = (rep) => RANK_PERKS[getBadge(rep).id];
 
+/** @param {number} n */
 export const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+"k" : String(n);
 
+/** @param {Date|number} d */
 export const ago = d => {
-  const s = Math.floor((Date.now()-d)/1000);
+  const s = Math.floor((Date.now()-Number(d))/1000);
   if (s<3600) return `${Math.floor(s/60)}分前`;
   if (s<86400) return `${Math.floor(s/3600)}時間前`;
   return `${Math.floor(s/86400)}日前`;
 };
 
+/** @param {number} deadline */
 export const timeLeft = (deadline) => {
   const ms = deadline - Date.now();
   if (ms <= 0) return null;
@@ -68,12 +83,14 @@ export const timeLeft = (deadline) => {
   return `あと${h}時間`;
 };
 
+/** @param {number} pro @param {number} con */
 export const pct = (pro, con) => {
   const total = pro + con || 1;
   return { proP: (pro/total*100).toFixed(1), conP: (con/total*100).toFixed(1) };
 };
 
 // ─── Related debates: 同じトピックから他のディベートを抽出 ───────
+/** @param {Debate} current @param {Debate[]} all */
 export const getRelated = (current, all) => {
   return all
     .filter(d => d.id !== current.id && d.topicId === current.topicId)
