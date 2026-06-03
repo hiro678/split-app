@@ -1,6 +1,6 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo } from "react";
-import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound } from "../ui/Icn";
+import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated } from "../lib/logic";
 import { AppContext } from "../context";
@@ -614,8 +614,9 @@ export function UserPage({ author, dispatch }) {
               {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Flame} size={12}/> 人気ユーザー</span>}
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:99,
+              <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"2px 10px", borderRadius:99,
                 background:badge.color+"15", color:badge.color, fontWeight:700, fontSize:13, border:`1px solid ${badge.color}40` }}>
+                <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:badge.color, borderRadius:5, padding:"1px 5px" }}>Lv.{badge.tier}</span>
                 <Icn icon={badge.Icon} size={14}/> {badge.label}
               </span>
               <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>Rep: {rep}</span>
@@ -1231,6 +1232,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 // ─── Hero（初見向け説明バナー） ───────────────────────────────────
 export function HeroBanner({ onDismiss }) {
   const steps = [
+    { Icon: Target, t: "テーマを選ぶ", d: "賛否を問える話題を探す" },
     { Icon: ThumbsUp, t: "立場を表明", d: "賛成 / 反対を選ぶ" },
     { Icon: MessageCircle, t: "根拠を語る", d: "理由をコメントで" },
     { Icon: BarChart3, t: "分布を見る", d: "賛否がリアルタイムで動く" },
@@ -1250,15 +1252,15 @@ export function HeroBanner({ onDismiss }) {
         Split は、あらゆるテーマについて賛成・反対の意見と根拠を左右に並べて可視化するプラットフォームです。
         投票で賛否の分布が一目でわかり、コメントで議論の流れを追えます。
       </p>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:10 }}>
         {steps.map((s, i) => (
-          <div key={s.t} style={{ display:"flex", alignItems:"center", gap:8, background:"var(--surface)",
-            border:"1px solid var(--border)", borderRadius:10, padding:"8px 12px", flex:"1 1 160px", minWidth:0 }}>
-            <span style={{ fontSize:11, fontWeight:800, color:"var(--text-4)", flexShrink:0 }}>{i+1}</span>
-            <Icn icon={s.Icon} size={16} style={{ color:"var(--text-3)" }}/>
+          <div key={s.t} style={{ display:"flex", alignItems:"flex-start", gap:8, background:"var(--surface)",
+            border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px", minWidth:0 }}>
+            <span style={{ fontSize:11, fontWeight:800, color:"var(--text-4)", flexShrink:0, marginTop:1 }}>{i+1}</span>
+            <Icn icon={s.Icon} size={16} style={{ color:"var(--text-3)", marginTop:1 }}/>
             <div style={{ minWidth:0 }}>
               <p style={{ fontSize:12.5, fontWeight:700, color:"var(--text)" }}>{s.t}</p>
-              <p style={{ fontSize:11, color:"var(--text-3)", whiteSpace:"nowrap" }}>{s.d}</p>
+              <p style={{ fontSize:11, color:"var(--text-3)", lineHeight:1.4 }}>{s.d}</p>
             </div>
           </div>
         ))}

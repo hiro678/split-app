@@ -370,19 +370,22 @@ export default function App() {
           <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのレピュテーション</p>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-              <Icn icon={myBadge.Icon} size={20} style={{ color:myBadge.color }}/>
+              <Icn icon={myBadge.Icon} size={22} style={{ color:myBadge.color }}/>
               <div>
-                <p style={{ fontSize:13, fontWeight:800, color:myBadge.color }}>{myBadge.label}</p>
+                <p style={{ fontSize:13, fontWeight:800, color:myBadge.color, display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:myBadge.color, borderRadius:6, padding:"1px 6px" }}>Lv.{myBadge.tier}</span>
+                  {myBadge.label}
+                </p>
                 <p style={{ fontSize:11, color:"var(--text-4)" }}>Rep: {myRep}</p>
               </div>
             </div>
             {nextBadge && (
               <>
-                <div style={{ width:"100%", height:5, background:"var(--surface-3)", borderRadius:99, overflow:"hidden", marginBottom:4 }}>
-                  <div style={{ width:`${(myRep/nextBadge.min)*100}%`, height:"100%", background:myBadge.color, transition:"width .5s" }} />
+                <div style={{ width:"100%", height:6, background:"var(--surface-3)", borderRadius:99, overflow:"hidden", marginBottom:4 }}>
+                  <div style={{ width:`${Math.min(100, Math.max(0, ((myRep - myBadge.min) / (nextBadge.min - myBadge.min)) * 100))}%`, height:"100%", background:myBadge.color, transition:"width .5s" }} />
                 </div>
                 <p style={{ fontSize:10, color:"var(--text-4)" }}>
-                  あと <strong style={{ color:nextBadge.color }}>{nextBadge.min - myRep}</strong> で「{nextBadge.label}」
+                  あと <strong style={{ color:nextBadge.color }}>{nextBadge.min - myRep}</strong> で Lv.{nextBadge.tier}「{nextBadge.label}」
                 </p>
               </>
             )}
@@ -490,14 +493,20 @@ export default function App() {
 
             {/* Badge guide */}
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Award} size={16}/> バッジ一覧</h4>
-              {BADGES.map(b => (
-                <div key={b.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
-                  <Icn icon={b.Icon} size={14} style={{ color:b.color }}/>
-                  <span style={{ fontSize:12, fontWeight:700, color:b.color }}>{b.label}</span>
-                  <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>{b.min}+ Rep</span>
-                </div>
-              ))}
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Award} size={16}/> ランク一覧</h4>
+              {BADGES.map(b => {
+                const reached = myRep >= b.min;
+                const current = myBadge.id === b.id;
+                return (
+                  <div key={b.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 6px", borderRadius:8,
+                    background: current ? b.color + "1a" : "none", opacity: reached ? 1 : 0.5 }}>
+                    <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:b.color, borderRadius:5, padding:"1px 5px", flexShrink:0 }}>Lv.{b.tier}</span>
+                    <Icn icon={b.Icon} size={14} style={{ color:b.color }}/>
+                    <span style={{ fontSize:12, fontWeight:700, color:b.color }}>{b.label}</span>
+                    <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>{b.min}+</span>
+                  </div>
+                );
+              })}
             </div>
 
             <div style={{ border:"1px solid var(--border)", borderRadius:12, overflow:"hidden" }}>

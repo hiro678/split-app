@@ -1,7 +1,7 @@
 // アプリ全体で使う定数・スタンス定義
 import {
-  ThumbsUp, ThumbsDown, Sprout, Sparkles, Brain, Star, Crown,
-  Cpu, Leaf, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard,
+  ThumbsUp, ThumbsDown, Sprout, Sparkles, Brain, Star, Crown, Award, Leaf,
+  Cpu, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard,
 } from "lucide-react";
 
 // ─── Topics (芸能・スポーツ追加) ──────────────────────────────────
@@ -15,13 +15,17 @@ export const TOPICS = [
   { id: "t7", name: "芸能・スポーツ", Icon: Clapperboard, members: "82k" },
 ];
 
-// ─── Reputation badge thresholds ─────────────────────────────────
+// ─── ランク（Lv.1→7 の昇格ラダー）────────────────────────────────
+//  称号・アイコン・色を一貫して上昇させ、レベルアップ感を出す。
+//  しきい値は序盤を細かく、上位ほど広く（昇格の達成感を維持）。
 export const BADGES = [
-  { id: "newbie",   label: "新人",       min: 0,    color: "var(--text-4)", Icon: Sprout },
-  { id: "active",   label: "アクティブ", min: 50,   color: "#10b981", Icon: Sparkles },
-  { id: "thinker",  label: "論客",       min: 200,  color: "#8b5cf6", Icon: Brain },
-  { id: "veteran",  label: "ベテラン",   min: 500,  color: "#f59e0b", Icon: Star },
-  { id: "legend",   label: "レジェンド", min: 1500, color: "#ef4444", Icon: Crown },
+  { id: "newbie",      tier: 1, label: "新人",         min: 0,    color: "#94a3b8", Icon: Sprout },
+  { id: "debater",     tier: 2, label: "論客",         min: 40,   color: "#22c55e", Icon: Leaf },
+  { id: "adv_debater", tier: 3, label: "上級論客",     min: 120,  color: "#06b6d4", Icon: Sparkles },
+  { id: "expert",      tier: 4, label: "エキスパート", min: 280,  color: "#3b82f6", Icon: Brain },
+  { id: "veteran",     tier: 5, label: "ベテラン",     min: 600,  color: "#8b5cf6", Icon: Star },
+  { id: "master",      tier: 6, label: "マスター",     min: 1200, color: "#f59e0b", Icon: Award },
+  { id: "legend",      tier: 7, label: "レジェンド",   min: 2500, color: "#ef4444", Icon: Crown },
 ];
 
 // 仮想ユーザーのレピュテーション
@@ -43,11 +47,13 @@ export const USER_REP = {
 // ランク別の月間クォータ（badge.id をキーに）
 /** @type {Record<string, { debates: number, comments: number }>} */
 export const RANK_PERKS = {
-  newbie:  { debates: 2,  comments: 10 },
-  active:  { debates: 5,  comments: 30 },
-  thinker: { debates: 10, comments: 80 },
-  veteran: { debates: 25, comments: 200 },
-  legend:  { debates: 9999, comments: 9999 },
+  newbie:      { debates: 2,    comments: 10 },
+  debater:     { debates: 4,    comments: 25 },
+  adv_debater: { debates: 6,    comments: 40 },
+  expert:      { debates: 10,   comments: 70 },
+  veteran:     { debates: 18,   comments: 130 },
+  master:      { debates: 35,   comments: 300 },
+  legend:      { debates: 9999, comments: 9999 },
 };
 
 // ─── 通報理由 ─────────────────────────────────────────────────────
