@@ -1757,6 +1757,18 @@ function AuthModal({ onClose, notify }) {
   const [err, setErr] = useState("");
   const isSignup = mode === "signup";
 
+  // よくある英語エラーを日本語化
+  const jpError = (msg = "") => {
+    const m = msg.toLowerCase();
+    if (m.includes("invalid login")) return "メールアドレスまたはパスワードが正しくありません";
+    if (m.includes("email not confirmed")) return "メール確認が完了していません";
+    if (m.includes("already registered") || m.includes("already been registered")) return "このメールアドレスは登録済みです。ログインしてください";
+    if (m.includes("at least 6")) return "パスワードは6文字以上にしてください";
+    if (m.includes("unable to validate email") || m.includes("invalid email")) return "メールアドレスの形式が正しくありません";
+    if (m.includes("database error")) return "サーバー側エラー（profilesテーブル/トリガー未設定の可能性）";
+    return msg || "エラーが発生しました";
+  };
+
   const submit = async () => {
     setErr("");
     if (!email.trim() || !password) { setErr("メールとパスワードを入力してください"); return; }
@@ -1765,16 +1777,17 @@ function AuthModal({ onClose, notify }) {
     try {
       if (isSignup) {
         const { data, error } = await signUp(email.trim(), password, username.trim());
-        if (error) { setErr(error.message); return; }
+        if (error) { console.error("[auth] signUp", error); setErr(jpError(error.message)); return; }
         if (data?.session) { notify("アカウントを作成しました"); onClose(); }
-        else { notify("確認メールを送信しました"); setErr("メールを確認してログインしてください。"); setMode("login"); }
+        else { notify("確認メールを送信しました"); setErr("登録しました。メール内のリンクで確認後にログインしてください。"); setMode("login"); }
       } else {
         const { error } = await signIn(email.trim(), password);
-        if (error) { setErr(error.message); return; }
+        if (error) { console.error("[auth] signIn", error); setErr(jpError(error.message)); return; }
         notify("ログインしました"); onClose();
       }
     } catch (e) {
-      setErr(e?.message || "エラーが発生しました");
+      console.error("[auth] submit", e);
+      setErr(jpError(e?.message));
     } finally {
       setBusy(false);
     }
@@ -1810,7 +1823,12 @@ function AuthModal({ onClose, notify }) {
             onKeyDown={e=>{ if (e.key === "Enter") submit(); }}
             placeholder="6文字以上" autoComplete={isSignup ? "new-password" : "current-password"} aria-label="パスワード" style={inputStyle} />
         </div>
-        {err && <p style={{ fontSize:12, color:STANCE.con.color, fontWeight:600 }}>{err}</p>}
+        {err && (
+          <div role="alert" style={{ display:"flex", alignItems:"flex-start", gap:8, fontSize:12.5, color:STANCE.con.color,
+            fontWeight:600, background:STANCE.con.bg, border:`1px solid ${STANCE.con.border}`, borderRadius:10, padding:"10px 12px" }}>
+            <Icn icon={AlertCircle} size={15} style={{ marginTop:1 }}/><span>{err}</span>
+          </div>
+        )}
         <button onClick={submit} disabled={busy} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
           {busy ? "処理中…" : isSignup ? "登録する" : "ログイン"}
         </button>
