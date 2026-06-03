@@ -41,9 +41,24 @@ function renderBody(text: string, dispatch: any) {
   return nodes;
 }
 
-// 候補サジェスト付きテキストエリア（@入力でユーザー名を補完）
-export function MentionTextarea({ value, onChange, users = [], onKeyDown, style, ...rest }: any) {
+// 入力中の本文を描画（@username だけ青く）。textarea 背面のオーバーレイ用。
+function highlightMentions(text: string) {
+  const nodes: any[] = [];
+  let last = 0, i = 0, m: RegExpExecArray | null;
+  MENTION_RE.lastIndex = 0;
+  while ((m = MENTION_RE.exec(text))) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    nodes.push(<span key={`h${i++}`} style={{ color: STANCE.pro.color, fontWeight: 700 }}>{m[0]}</span>);
+    last = m.index + m[0].length;
+  }
+  nodes.push(text.slice(last));
+  return nodes;
+}
+
+// 候補サジェスト付きテキストエリア（@入力でユーザー名を補完＋入力中も @ を青表示）
+export function MentionTextarea({ value, onChange, users = [], onKeyDown, style, placeholder, ...rest }: any) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const backRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [idx, setIdx] = useState(0);
@@ -77,7 +92,8 @@ export function MentionTextarea({ value, onChange, users = [], onKeyDown, style,
   };
 
   const handleKeyDown = (e: any) => {
-    if (open && matches.length) {
+    // ⌘/Ctrl は送信ショートカット用なので候補確定には使わない
+    if (open && matches.length && !e.metaKey && !e.ctrlKey) {
       if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => (i + 1) % matches.length); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); setIdx(i => (i - 1 + matches.length) % matches.length); return; }
       if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(matches[idx]); return; }
@@ -86,10 +102,24 @@ export function MentionTextarea({ value, onChange, users = [], onKeyDown, style,
     onKeyDown?.(e);
   };
 
+  const syncScroll = () => {
+    if (backRef.current && ref.current) { backRef.current.scrollTop = ref.current.scrollTop; backRef.current.scrollLeft = ref.current.scrollLeft; }
+  };
+
+  // 背面オーバーレイ（色付きテキスト）と前面 textarea（文字は透明・カーソルのみ表示）を重ねる
+  const backdropStyle = { ...style, position: "absolute", inset: 0, margin: 0, lineHeight: 1.5, resize: "none",
+    color: "var(--text)", background: "transparent", borderColor: "transparent",
+    pointerEvents: "none", whiteSpace: "pre-wrap", overflowWrap: "break-word", wordBreak: "break-word", overflow: "hidden" };
+  const taStyle = { ...style, position: "relative", margin: 0, lineHeight: 1.5,
+    color: "transparent", caretColor: "var(--text)", background: "transparent" };
+
   return (
     <div style={{ position: "relative" }}>
-      <textarea ref={ref} value={value} onChange={handleChange} onKeyDown={handleKeyDown}
-        onBlur={() => setTimeout(() => setOpen(false), 120)} style={style} {...rest} />
+      <div ref={backRef} aria-hidden="true" style={backdropStyle}>
+        {value ? highlightMentions(value) : <span style={{ color: "var(--text-4)" }}>{placeholder}</span>}
+      </div>
+      <textarea ref={ref} value={value} onChange={handleChange} onKeyDown={handleKeyDown} onScroll={syncScroll}
+        onBlur={() => setTimeout(() => setOpen(false), 120)} style={taStyle} {...rest} />
       {open && matches.length > 0 && (
         <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 60, minWidth: 180, maxWidth: "100%",
           background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,.16)", overflow: "hidden" }}>
@@ -393,7 +423,8 @@ export function Thread({ comment, debateId, dispatch, locked }) {
                 <Icn icon={STANCE[replyingStance].Icon} size={13}/> {STANCE[replyingStance].label}として返信
               </p>
               <MentionTextarea value={replyText} onChange={setReplyText} users={mentionUsers} rows={2}
-                placeholder="あなたの意見を書く…（@でメンション）"
+                onKeyDown={(e: any) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); submitReply(); } }}
+                placeholder="あなたの意見を書く…（@でメンション / ⌘Enterで送信）"
                 style={{ width:"100%", padding:"7px 10px", border:`1px solid ${STANCE[replyingStance].border}`,
                   borderRadius:8, fontSize:13, fontFamily:"inherit", resize:"vertical", outline:"none", background:"var(--surface)", color:"var(--text)" }} />
               <div style={{ display:"flex", gap:8, marginTop:7 }}>
@@ -580,7 +611,8 @@ export function SplitComments({ d, dispatch }) {
             <StancePicker current={myStance} onChange={setMyStance} />
           </div>
           <MentionTextarea value={text} onChange={setText} users={mentionUsers} rows={3}
-            placeholder="あなたの意見・論点を書いてください…（@でメンション）"
+            onKeyDown={(e: any) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); submit(); } }}
+            placeholder="あなたの意見・論点を書いてください…（@でメンション / ⌘Enterで送信）"
             style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"var(--text)", background:"var(--surface)" }} />
           <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
             <button onClick={submit} disabled={!text.trim() || overQuota}
