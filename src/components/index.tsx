@@ -193,7 +193,7 @@ export function UserBadge({ author, size="sm" }) {
   const b = getBadge(rep);
   const sm = size==="sm";
   return (
-    <span title={`${b.label} (Rep: ${rep})`}
+    <span title={`Lv.${b.tier} ${b.label}（スコア ${rep}）`}
       style={{ display:"inline-flex", alignItems:"center", gap:3,
         padding: sm?"1px 6px":"2px 8px", borderRadius:99,
         background: b.color + "15", color: b.color,
@@ -632,7 +632,7 @@ export function SplitComments({ d, dispatch }) {
             <div key={s} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px",
               background:st.bg, border:`1px solid ${st.border}`, borderRadius:10 }}>
               <Icn icon={st.Icon} size={16} style={{ color:st.color }}/>
-              <span style={{ fontWeight:700, fontSize:14, color:st.color }}>{st.label}カラム</span>
+              <span style={{ fontWeight:700, fontSize:14, color:st.color }}>{st.label}側</span>
               <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"var(--surface)",
                 color:st.color, padding:"2px 8px", borderRadius:99, border:`1px solid ${st.border}` }}>
                 スレッド {cnt}件
@@ -752,7 +752,7 @@ export function UserPage({ author, dispatch }) {
                 <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:badge.color, borderRadius:5, padding:"1px 5px" }}>Lv.{badge.tier}</span>
                 <Icn icon={badge.Icon} size={14}/> {badge.label}
               </span>
-              <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>Rep: {rep}</span>
+              <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>スコア {fmt(rep)}</span>
             </div>
           </div>
         </div>
@@ -1101,7 +1101,7 @@ export function NewDebateModal({ dispatch }) {
           <div style={{ fontSize:12, color:"var(--text-4)", textAlign:"right", marginTop:2 }}>{title.length}/120</div>
         </div>
         <div>
-          <label style={labelStyle}>概要・背景 (オプション)</label>
+          <label style={labelStyle}>概要・背景 (任意)</label>
           <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={4}
             placeholder="このテーマについての背景や論点を説明してください…"
             style={{ ...inputStyle, resize:"vertical" }} />

@@ -289,7 +289,7 @@ export default function App() {
             <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"var(--text)" }}>Split</span>
             {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
-              const m = { local:["ローカル","var(--text-3)","var(--surface-3)"], loading:["接続中","#b45309","var(--amber-bg)"], connected:["DB接続","#16a34a","var(--green-bg)"], error:["接続失敗","#dc2626","#fee2e2"] }[dbStatus];
+              const m = { local:["ローカル","var(--text-3)","var(--surface-3)"], loading:["接続中","#b45309","var(--amber-bg)"], connected:["接続済み","#16a34a","var(--green-bg)"], error:["接続エラー","#dc2626","#fee2e2"] }[dbStatus];
               return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Circle} size={7} fill="currentColor"/>{m[0]}</span>;
             })()}
           </div>
@@ -400,7 +400,7 @@ export default function App() {
 
           {/* User reputation card */}
           <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのレピュテーション</p>
+            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのランク</p>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
               <Icn icon={myBadge.Icon} size={22} style={{ color:myBadge.color }}/>
               <div>
@@ -408,7 +408,7 @@ export default function App() {
                   <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:myBadge.color, borderRadius:6, padding:"1px 6px" }}>Lv.{myBadge.tier}</span>
                   {myBadge.label}
                 </p>
-                <p style={{ fontSize:11, color:"var(--text-4)" }}>Rep: {myRep}</p>
+                <p style={{ fontSize:11, color:"var(--text-4)" }}>スコア {fmt(myRep)}</p>
               </div>
             </div>
             {nextBadge && (
