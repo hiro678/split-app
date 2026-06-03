@@ -6,7 +6,7 @@ import {
   Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, Globe,
   ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon,
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
-  Circle, CircleDot,
+  Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound,
 } from "lucide-react";
 
 // 行内アイコン（テキストと縦中央揃え）。color は currentColor 継承でテーマ追従。
@@ -110,6 +110,10 @@ const perkOf = (rep) => RANK_PERKS[getBadge(rep).id];
 
 // ─── 通報理由 ─────────────────────────────────────────────────────
 const REPORT_REASONS = ["スパム・宣伝", "誹謗中傷・嫌がらせ", "虚偽・誤情報", "暴力的・不適切な内容", "その他"];
+
+// ─── 管理者パスコード（暫定ガード） ───────────────────────────────
+//  クライアント側の簡易ロック。本番では Supabase Auth + ロール(RLS) に置換すること。
+const ADMIN_PASSCODE = "split-admin";
 
 // ─── Vote history (時系列データ) ──────────────────────────────────
 const genHistory = (finalPro, finalCon, hours=24) => {
@@ -360,7 +364,7 @@ function reducer(state, action) {
     case "SET_SORT": return { ...state, sort: action.sort };
     case "SET_TOPIC": return { ...state, activeTopic: action.id, activeTag: null, activeDebate: null, activeUser: null, activeAdmin: false };
     case "SET_TAG": return { ...state, activeTag: action.tag, activeDebate: null, activeUser: null };
-    case "SET_ACTIVE": return { ...state, activeDebate: action.debate, activeUser: null };
+    case "SET_ACTIVE": return { ...state, activeDebate: action.debate, activeUser: null, activeAdmin: false };
     case "SET_USER": return { ...state, activeUser: action.author, activeDebate: null };
     case "TOGGLE_NEW": return { ...state, showNew: !state.showNew };
     case "SET_SEARCH": return { ...state, search: action.q };
@@ -1186,6 +1190,15 @@ function DebateDetail({ d, allDebates, dispatch }) {
       {/* AI Summary */}
       {d.aiSummary && <AISummary summary={d.aiSummary} />}
 
+      {/* スレッドの読み方ガイド */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:12,
+        padding:"10px 14px", background:"var(--surface-2)", border:"1px dashed var(--border)", borderRadius:10,
+        fontSize:12, color:"var(--text-3)" }}>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:700, color:STANCE.pro.color }}><Icn icon={ThumbsUp} size={13}/>左＝賛成</span>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:700, color:STANCE.con.color }}><Icn icon={ThumbsDown} size={13}/>右＝反対</span>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={CornerUpLeft} size={13}/>各行は前の発言への返信・反論です</span>
+      </div>
+
       <SplitComments d={d} dispatch={dispatch} />
 
       {/* Related */}
@@ -1612,6 +1625,114 @@ const cActBtn = { background:"none", border:"none", cursor:"pointer", fontSize:1
 const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"var(--text-2)", marginBottom:6 };
 const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid var(--border)", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"var(--surface-2)", color:"var(--text)" };
 
+// ─── Hero（初見向け説明バナー） ───────────────────────────────────
+function HeroBanner({ onDismiss }) {
+  const steps = [
+    { Icon: ThumbsUp, t: "立場を表明", d: "賛成 / 反対を選ぶ" },
+    { Icon: MessageCircle, t: "根拠を語る", d: "理由をコメントで" },
+    { Icon: BarChart3, t: "分布を見る", d: "賛否がリアルタイムで動く" },
+    { Icon: Trophy, t: "決着を見る", d: "期間終了で勝敗が確定" },
+  ];
+  return (
+    <div style={{ position:"relative", marginBottom:16, padding:"20px 22px", borderRadius:16,
+      background:"linear-gradient(135deg, var(--pro-bg), var(--con-bg))", border:"1px solid var(--border)" }}>
+      <button onClick={onDismiss} title="閉じる" aria-label="説明を閉じる"
+        style={{ position:"absolute", top:12, right:12, background:"none", border:"none", cursor:"pointer", color:"var(--text-3)", display:"inline-flex" }}>
+        <Icn icon={X} size={18}/>
+      </button>
+      <h2 style={{ fontSize:20, fontWeight:800, color:"var(--text)", letterSpacing:-0.4, marginBottom:6 }}>
+        賛成と反対を「構造化」するディベート広場
+      </h2>
+      <p style={{ fontSize:13.5, color:"var(--text-2)", lineHeight:1.7, marginBottom:14, maxWidth:560 }}>
+        Split は、あらゆるテーマについて賛成・反対の意見と根拠を左右に並べて可視化するプラットフォームです。
+        投票で賛否の分布が一目でわかり、コメントで議論の流れを追えます。
+      </p>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+        {steps.map((s, i) => (
+          <div key={s.t} style={{ display:"flex", alignItems:"center", gap:8, background:"var(--surface)",
+            border:"1px solid var(--border)", borderRadius:10, padding:"8px 12px", flex:"1 1 160px", minWidth:0 }}>
+            <span style={{ fontSize:11, fontWeight:800, color:"var(--text-4)", flexShrink:0 }}>{i+1}</span>
+            <Icn icon={s.Icon} size={16} style={{ color:"var(--text-3)" }}/>
+            <div style={{ minWidth:0 }}>
+              <p style={{ fontSize:12.5, fontWeight:700, color:"var(--text)" }}>{s.t}</p>
+              <p style={{ fontSize:11, color:"var(--text-3)", whiteSpace:"nowrap" }}>{s.d}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize:11, color:"var(--text-4)", marginTop:12, display:"flex", alignItems:"center", gap:5 }}>
+        <Icn icon={Sparkles} size={12}/> 現在表示中の数値・ユーザーはデモ用のサンプルデータです。
+      </p>
+    </div>
+  );
+}
+
+// ─── Skeleton（読み込み中プレースホルダ） ─────────────────────────
+function SkeletonCard() {
+  const bar = (w, h = 12, mb = 10) => (
+    <div style={{ width:w, height:h, borderRadius:6, marginBottom:mb, background:"var(--surface-3)", animation:"split-pulse 1.2s ease-in-out infinite" }} />
+  );
+  return (
+    <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, overflow:"hidden" }} aria-hidden="true">
+      <div style={{ height:5, background:"var(--surface-3)" }} />
+      <div style={{ padding:"16px 20px" }}>
+        {bar("38%", 14)}
+        {bar("80%", 18, 16)}
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>{bar("20%")}{bar("20%", 12, 0)}</div>
+        {bar("100%", 8, 14)}
+        <div style={{ display:"flex", gap:8 }}>{bar("64px", 24, 0)}{bar("64px", 24, 0)}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Toast（フィードバック通知） ──────────────────────────────────
+function Toast({ toast }) {
+  const palette = {
+    pro:  { fg:"#1d4ed8", icon: ThumbsUp },
+    con:  { fg:"#b91c1c", icon: ThumbsDown },
+    info: { fg:"var(--text)", icon: CheckCircle2 },
+  }[toast.kind] || { fg:"var(--text)", icon: CheckCircle2 };
+  return (
+    <div role="status" aria-live="polite" key={toast.id}
+      style={{ position:"fixed", left:"50%", bottom:28, zIndex:400, transform:"translateX(-50%)",
+        display:"flex", alignItems:"center", gap:8, background:"var(--surface)",
+        border:"1px solid var(--border)", boxShadow:"0 8px 28px rgba(0,0,0,.18)",
+        borderRadius:99, padding:"10px 18px", fontSize:13.5, fontWeight:700, color:"var(--text)",
+        animation:"split-toast-in .22s ease", maxWidth:"90vw" }}>
+      <Icn icon={palette.icon} size={16} style={{ color:palette.fg }}/>
+      <span>{toast.msg}</span>
+    </div>
+  );
+}
+
+// ─── 管理者パスコード入力モーダル ─────────────────────────────────
+function AdminGateModal({ onSubmit, onClose }) {
+  const [code, setCode] = useState("");
+  return (
+    <div onClick={onClose}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:350, padding:16 }}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:380, padding:26, display:"flex", flexDirection:"column", gap:14 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <Icn icon={KeyRound} size={20}/>
+          <h3 style={{ fontWeight:800, fontSize:17, color:"var(--text)" }}>管理者モード</h3>
+          <button onClick={onClose} title="閉じる" aria-label="閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
+        </div>
+        <p style={{ fontSize:13, color:"var(--text-3)", lineHeight:1.6 }}>管理者パスコードを入力してください。</p>
+        <input type="password" autoFocus value={code} onChange={e=>setCode(e.target.value)}
+          onKeyDown={e=>{ if (e.key === "Enter") onSubmit(code); }}
+          placeholder="パスコード" aria-label="管理者パスコード"
+          style={{ ...inputStyle }} />
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <button onClick={onClose} style={btnGhost}>キャンセル</button>
+          <button onClick={()=>onSubmit(code)} disabled={!code} style={btnPrimary}>解錠</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App ──────────────────────────────────────────────────────────
 // 画面幅でモバイル判定するフック
 function useIsMobile(breakpoint = 820) {
@@ -1637,6 +1758,32 @@ export default function App() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // ── トースト通知 ────────────────────────────────────────────
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef();
+  const notify = useCallback((msg, kind = "info") => {
+    setToast({ msg, kind, id: Date.now() });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2400);
+  }, []);
+
+  // アクションに応じたフィードバック文言（rawDispatch 前の state で判定）
+  const feedbackFor = useCallback((action) => {
+    const s = stateRef.current;
+    if (action.type === "SET_STANCE") {
+      const d = s.debates.find(x => x.id === action.id);
+      if (!d || d.status === "closed") return;
+      const next = d.userStance === action.stance ? null : action.stance;
+      notify(next ? `「${STANCE[next].label}」に投票しました` : "投票を取り消しました", next ? next : "info");
+    } else if (action.type === "ADD_COMMENT") notify("コメントを投稿しました", "pro");
+    else if (action.type === "ADD_REPLY") notify("返信を投稿しました", "pro");
+    else if (action.type === "ADD_DEBATE") notify("ディベートを作成しました", "pro");
+    else if (action.type === "SAVE") {
+      const d = s.debates.find(x => x.id === action.id);
+      notify(d?.saved ? "保存を解除しました" : "保存しました");
+    }
+  }, [notify]);
+
   // DB 書き込みをミラーリングする dispatch ラッパー
   const dispatch = useCallback((action) => {
     if (isSupabaseConfigured) {
@@ -1651,8 +1798,9 @@ export default function App() {
       }
       syncAction(toSync);
     }
+    feedbackFor(action);
     rawDispatch(action);
-  }, []);
+  }, [feedbackFor]);
 
   // 起動時: Supabase 設定済みなら DB から読み込み。空ならサンプルを投入。
   const [dbStatus, setDbStatus] = useState(isSupabaseConfigured ? "loading" : "local");
@@ -1719,6 +1867,35 @@ export default function App() {
   }, [theme]);
   const toggleTheme = useCallback(() => setTheme(t => (t === "dark" ? "light" : "dark")), []);
 
+  // ── 管理者ロック（暫定）: URL に #admin でパスコード入力 → 解錠 ──
+  //   ※ クライアント側の簡易ガード。実運用では Supabase Auth + ロール(RLS)へ置換。
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminPrompt, setAdminPrompt] = useState(false);
+  useEffect(() => {
+    const check = () => { if (window.location.hash === "#admin") setAdminPrompt(true); };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
+  const submitAdminCode = (code) => {
+    if (code === ADMIN_PASSCODE) {
+      setAdminUnlocked(true); setAdminPrompt(false);
+      if (window.location.hash === "#admin") history.replaceState(null, "", window.location.pathname);
+      dispatch({ type:"SET_ADMIN", on:true });
+      notify("管理者モードを解除しました");
+    } else {
+      notify("パスコードが違います", "con");
+    }
+  };
+
+  // ── ヒーロー（初見向け説明）の表示状態 ──
+  const [heroDismissed, setHeroDismissed] = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("split-hero") === "closed");
+  const dismissHero = () => { setHeroDismissed(true); localStorage.setItem("split-hero", "closed"); };
+
+  const isLoading = dbStatus === "loading";
+  const isHome = !activeAdmin && !activeUser && !liveDebate;
+
   return (
     <AppContext.Provider value={{ dispatch, debates, myRep }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
@@ -1750,6 +1927,8 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
         textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px var(--pro-bg); outline: none; }
+        @keyframes split-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+        @keyframes split-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
       `}</style>
 
       <header style={{ position:"sticky", top:0, zIndex:100, background:"var(--surface)", borderBottom:"1px solid var(--border)" }}>
@@ -1757,7 +1936,7 @@ export default function App() {
           display:"flex", alignItems:"center", padding: isMobile ? "10px 14px" : "0 24px",
           gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
           {isMobile && (
-            <button onClick={()=>setDrawerOpen(true)} title="メニュー"
+            <button onClick={()=>setDrawerOpen(true)} title="メニュー" aria-label="メニューを開く"
               style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
                 cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
           )}
@@ -1781,18 +1960,21 @@ export default function App() {
           <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
             <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", display:"inline-flex", pointerEvents:"none" }}><Icn icon={Search} size={15}/></span>
             <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
-              placeholder="ディベートを検索…"
+              placeholder="ディベートを検索…" aria-label="ディベートを検索"
               style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid var(--border)", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)" }} />
           </div>
           <div style={{ display:"flex", gap: isMobile ? 8 : 10, flexShrink:0, alignItems:"center", marginLeft: isMobile ? "auto" : 0 }}>
             <button onClick={toggleTheme}
               title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+              aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               style={{ background:"none", color:"var(--text-2)",
                 border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={theme === "dark" ? Sun : Moon} size={18}/></button>
-            <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
-              title="管理者ダッシュボード"
-              style={{ background: activeAdmin ? "var(--btn-active)" : "none", color: activeAdmin ? "#fff" : "var(--text-2)",
-                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Shield} size={18}/></button>
+            {adminUnlocked && (
+              <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
+                title="管理者ダッシュボード" aria-label="管理者ダッシュボード"
+                style={{ background: activeAdmin ? "var(--btn-active)" : "none", color: activeAdmin ? "#fff" : "var(--text-2)",
+                  border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Shield} size={18}/></button>
+            )}
             <button onClick={()=>dispatch({type:"TOGGLE_NEW"})}
               style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
             {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"var(--text-2)" }}>あ</div>}
@@ -1864,7 +2046,7 @@ export default function App() {
         </>)}
 
         <main style={{ flex:1, minWidth:0 }}>
-          {activeAdmin ? (
+          {activeAdmin && adminUnlocked ? (
             <AdminPage debates={debates} reports={reports} bannedUsers={bannedUsers} dispatch={dispatch} />
           ) : activeUser ? (
             <UserPage author={activeUser} dispatch={dispatch} />
@@ -1872,6 +2054,9 @@ export default function App() {
             <DebateDetail d={liveDebate} allDebates={debates} dispatch={dispatch} />
           ) : (
             <>
+              {!heroDismissed && !activeTag && !search && (
+                <HeroBanner onDismiss={dismissHero} />
+              )}
               {activeTag && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                   <span style={{ fontSize:13, color:"var(--text-3)" }}>タグで絞り込み中:</span>
@@ -1897,8 +2082,14 @@ export default function App() {
                 <span style={{ fontSize:13, color:"var(--text-4)" }}>{visible.length} 件のディベート</span>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-                {visible.length===0 && <div style={{ textAlign:"center", padding:"48px", color:"var(--text-4)", fontSize:15 }}>ディベートが見つかりません</div>}
-                {visible.map(d=><DebateCard key={d.id} d={d} dispatch={dispatch}/>)}
+                {isLoading ? (
+                  [0,1,2].map(i => <SkeletonCard key={i} />)
+                ) : (
+                  <>
+                    {visible.length===0 && <div style={{ textAlign:"center", padding:"48px", color:"var(--text-4)", fontSize:15 }}>ディベートが見つかりません</div>}
+                    {visible.map(d=><DebateCard key={d.id} d={d} dispatch={dispatch}/>)}
+                  </>
+                )}
               </div>
             </>
           )}
@@ -1970,6 +2161,8 @@ export default function App() {
       </div>
       {showNew && <NewDebateModal dispatch={dispatch} />}
       {reportTarget && <ReportModal target={reportTarget} dispatch={dispatch} />}
+      {adminPrompt && <AdminGateModal onSubmit={submitAdminCode} onClose={()=>{ setAdminPrompt(false); if (window.location.hash === "#admin") history.replaceState(null,"",window.location.pathname); }} />}
+      {toast && <Toast toast={toast} />}
     </div>
     </AppContext.Provider>
   );
