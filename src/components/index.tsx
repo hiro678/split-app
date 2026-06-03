@@ -6,6 +6,7 @@ import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perk
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
+import { validateUsername } from "../lib/moderation";
 import { AVATARS, Avatar } from "../avatars";
 
 // ─── メンション（@username） ──────────────────────────────────────
@@ -1578,6 +1579,7 @@ export function AuthModal({ onClose, notify }) {
     setErr("");
     if (!email.trim() || !password) { setErr("メールとパスワードを入力してください"); return; }
     if (isSignup && !username.trim()) { setErr("ユーザー名を入力してください"); return; }
+    if (isSignup) { const ue = validateUsername(username); if (ue) { setErr(ue); return; } }
     setBusy(true);
     try {
       if (isSignup) {
@@ -1614,7 +1616,8 @@ export function AuthModal({ onClose, notify }) {
           <div>
             <label style={labelStyle}>ユーザー名</label>
             <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="例: hiro" autoComplete="username"
-              aria-label="ユーザー名" style={inputStyle} />
+              aria-label="ユーザー名" maxLength={20} style={inputStyle} />
+            <p style={{ fontSize:11, color:"var(--text-4)", marginTop:4 }}>半角英数字と _ で3〜20文字。@ハンドルとして表示されます。</p>
           </div>
         )}
         <div>

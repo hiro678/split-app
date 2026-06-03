@@ -1,0 +1,51 @@
+// ─── ユーザー名のモデレーション ───────────────────────────────────
+// 登録時に不適切なユーザー名を弾く。リストは随時追記して運用する。
+// ※ これはクライアント側の一次フィルタ。本番ではサーバ側（DBトリガー等）
+//   や専用モデレーションサービスとの併用を推奨。
+
+// なりすまし・運営詐称を防ぐ予約語（完全一致で禁止）
+const RESERVED = [
+  "admin", "administrator", "root", "system", "official", "support",
+  "staff", "mod", "moderator", "split", "splitofficial", "team",
+  "anonymous", "null", "undefined", "guest", "me", "you", "user",
+  "あなた",
+];
+
+// 不適切語（正規化後に部分一致で禁止）。誤検知しにくい強い語を中心に。
+const BANNED = [
+  "fuck", "fck", "fack", "phuck", "shit", "bitch", "biatch", "cunt",
+  "asshole", "bastard", "dipshit",
+  "motherfuck", "wanker", "jackass", "dick", "cock", "pussy", "slut",
+  "whore", "porn", "anal", "jizz", "cum", "boobs", "blowjob", "handjob",
+  "nigger", "nigga", "faggot", "retard", "kike", "spic", "chink",
+  "coon", "gook", "tranny", "rape", "rapist", "pedo", "pedophile",
+  "nazi", "hitler", "isis",
+];
+
+// リート文字を通常文字へ正規化（f4ck / sh1t / @ss などを検出）
+const LEET: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i" };
+
+const normalize = (s: string) =>
+  s.toLowerCase().replace(/[0134578@$!]/g, c => LEET[c] ?? c).replace(/_/g, "");
+
+/**
+ * ユーザー名を検証。問題があればエラーメッセージ、なければ null を返す。
+ * @param {string} name
+ * @returns {string | null}
+ */
+export function validateUsername(name: string): string | null {
+  const n = (name || "").trim();
+  if (n.length < 3) return "ユーザー名は3文字以上にしてください";
+  if (n.length > 20) return "ユーザー名は20文字以内にしてください";
+  if (!/^[A-Za-z0-9_]+$/.test(n)) return "半角英数字とアンダースコア( _ )のみ使えます";
+  if (!/^[A-Za-z]/.test(n)) return "ユーザー名は英字で始めてください";
+
+  const low = n.toLowerCase();
+  if (RESERVED.includes(low)) return "そのユーザー名は使用できません";
+
+  const norm = normalize(n);
+  if (RESERVED.includes(norm)) return "そのユーザー名は使用できません";
+  if (BANNED.some(w => norm.includes(w))) return "不適切な語が含まれています";
+
+  return null;
+}
