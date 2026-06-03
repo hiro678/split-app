@@ -185,6 +185,7 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showAllMine, setShowAllMine] = useState(false); // 参加中の「もっと見る」
   // ナビゲーション時はドロワーを閉じる
   useEffect(() => { setDrawerOpen(false); }, [activeDebate, activeUser, activeAdmin, activeTopic]);
 
@@ -369,21 +370,34 @@ export default function App() {
               </p>
               {myDebates.length === 0 ? (
                 <p style={{ fontSize:12, color:"var(--text-4)", padding:"0 4px 4px", lineHeight:1.6 }}>まだありません。コメントすると、ここにスレッドが並びます。</p>
-              ) : (
-                myDebates.slice(0, 8).map(d => {
-                  const isActive = liveDebate?.id === d.id;
-                  return (
-                    <button key={d.id} onClick={()=>dispatch({type:"SET_ACTIVE",debate:d})}
-                      title={d.title}
-                      style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"7px 10px", borderRadius:8, border:"none",
-                        background: isActive ? STANCE.pro.bg : "none", color: isActive ? STANCE.pro.color : "var(--text-2)",
-                        cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginBottom:2, transition:"background .1s" }}>
-                      <Icn icon={MessageCircle} size={14} style={{ flexShrink:0, color: isActive ? STANCE.pro.color : "var(--text-4)" }}/>
-                      <span style={{ flex:1, minWidth:0, fontSize:12.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</span>
+              ) : (() => {
+                const limit = isMobile ? 3 : 5;
+                const shown = showAllMine ? myDebates : myDebates.slice(0, limit);
+                const extra = myDebates.length - limit;
+                return (<>
+                  {shown.map(d => {
+                    const isActive = liveDebate?.id === d.id;
+                    return (
+                      <button key={d.id} onClick={()=>dispatch({type:"SET_ACTIVE",debate:d})}
+                        title={d.title}
+                        style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"7px 10px", borderRadius:8, border:"none",
+                          background: isActive ? STANCE.pro.bg : "none", color: isActive ? STANCE.pro.color : "var(--text-2)",
+                          cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginBottom:2, transition:"background .1s" }}>
+                        <Icn icon={MessageCircle} size={14} style={{ flexShrink:0, color: isActive ? STANCE.pro.color : "var(--text-4)" }}/>
+                        <span style={{ flex:1, minWidth:0, fontSize:12.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</span>
+                      </button>
+                    );
+                  })}
+                  {extra > 0 && (
+                    <button onClick={()=>setShowAllMine(v=>!v)}
+                      style={{ display:"flex", alignItems:"center", gap:5, width:"100%", padding:"6px 10px", borderRadius:8, border:"none",
+                        background:"none", color:STANCE.pro.color, fontSize:12, fontWeight:700, cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginTop:2 }}>
+                      <Icn icon={showAllMine ? ChevronUp : ChevronDown} size={14}/>
+                      {showAllMine ? "閉じる" : `もっと見る（+${extra}）`}
                     </button>
-                  );
-                })
-              )}
+                  )}
+                </>);
+              })()}
             </div>
           )}
 
