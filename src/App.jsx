@@ -1959,13 +1959,21 @@ export default function App() {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let alive = true;
-    const applySession = async (s) => {
+    const loadProfile = async (s) => {
+      const p = s?.user ? await fetchProfile(s.user.id) : null;
+      if (alive) setProfile(p);
+    };
+    // 初期セッション
+    getSession().then(s => { if (!alive) return; setSession(s); loadProfile(s); });
+    // セッション変化を監視
+    //  ⚠️ onAuthStateChange のコールバック内で直接 await supabase 呼び出しをすると
+    //     内部ロックでデッドロックする（プロフィール取得やDB読込が固まる）。
+    //     そのため profile 取得は setTimeout でコールバックの外へ逃がす。
+    const unsub = onAuthChange((s) => {
       if (!alive) return;
       setSession(s);
-      setProfile(s?.user ? await fetchProfile(s.user.id) : null);
-    };
-    getSession().then(applySession);
-    const unsub = onAuthChange(applySession);
+      setTimeout(() => { if (alive) loadProfile(s); }, 0);
+    });
     return () => { alive = false; unsub(); };
   }, []);
 
