@@ -1,24 +1,37 @@
 import { useState, useReducer, useMemo, useContext, createContext, useEffect, useRef, useCallback } from "react";
 import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates } from "./lib/supabase";
+import {
+  ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
+  MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Award, Medal,
+  Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, Globe,
+  ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon,
+  Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
+  Circle, CircleDot,
+} from "lucide-react";
+
+// 行内アイコン（テキストと縦中央揃え）。color は currentColor 継承でテーマ追従。
+const Icn = ({ icon: I, size = 14, fill = "none", style, ...rest }) => (
+  <I size={size} fill={fill} strokeWidth={2} style={{ flexShrink: 0, ...style }} {...rest} />
+);
 
 // ─── Topics (芸能・スポーツ追加) ──────────────────────────────────
 const TOPICS = [
-  { id: "t1", name: "AI・テクノロジー", icon: "🤖", members: "128k" },
-  { id: "t2", name: "環境・気候変動", icon: "🌱", members: "94k" },
-  { id: "t3", name: "教育", icon: "📚", members: "73k" },
-  { id: "t4", name: "経済・金融", icon: "📊", members: "61k" },
-  { id: "t5", name: "医療・健康", icon: "🏥", members: "55k" },
-  { id: "t6", name: "政治・社会", icon: "🏛️", members: "49k" },
-  { id: "t7", name: "芸能・スポーツ", icon: "🎬", members: "82k" },
+  { id: "t1", name: "AI・テクノロジー", Icon: Cpu, members: "128k" },
+  { id: "t2", name: "環境・気候変動", Icon: Leaf, members: "94k" },
+  { id: "t3", name: "教育", Icon: BookOpen, members: "73k" },
+  { id: "t4", name: "経済・金融", Icon: BarChart3, members: "61k" },
+  { id: "t5", name: "医療・健康", Icon: HeartPulse, members: "55k" },
+  { id: "t6", name: "政治・社会", Icon: Landmark, members: "49k" },
+  { id: "t7", name: "芸能・スポーツ", Icon: Clapperboard, members: "82k" },
 ];
 
 // ─── Reputation badge thresholds ─────────────────────────────────
 const BADGES = [
-  { id: "newbie",   label: "新人",       min: 0,    color: "var(--text-4)", emoji: "🌱" },
-  { id: "active",   label: "アクティブ", min: 50,   color: "#10b981", emoji: "✨" },
-  { id: "thinker",  label: "論客",       min: 200,  color: "#8b5cf6", emoji: "🧠" },
-  { id: "veteran",  label: "ベテラン",   min: 500,  color: "#f59e0b", emoji: "⭐" },
-  { id: "legend",   label: "レジェンド", min: 1500, color: "#ef4444", emoji: "👑" },
+  { id: "newbie",   label: "新人",       min: 0,    color: "var(--text-4)", Icon: Sprout },
+  { id: "active",   label: "アクティブ", min: 50,   color: "#10b981", Icon: Sparkles },
+  { id: "thinker",  label: "論客",       min: 200,  color: "#8b5cf6", Icon: Brain },
+  { id: "veteran",  label: "ベテラン",   min: 500,  color: "#f59e0b", Icon: Star },
+  { id: "legend",   label: "レジェンド", min: 1500, color: "#ef4444", Icon: Crown },
 ];
 
 const getBadge = (rep) => {
@@ -294,8 +307,8 @@ const timeLeft = (deadline) => {
 };
 
 const STANCE = {
-  pro: { label: "賛成", color: "#1d4ed8", bg: "var(--pro-bg)", border: "#bfdbfe", bar: "#93c5fd", light: "var(--pro-light)", emoji: "👍" },
-  con: { label: "反対", color: "#b91c1c", bg: "var(--con-bg)", border: "#fecaca", bar: "#fca5a5", light: "var(--con-light)", emoji: "👎" },
+  pro: { label: "賛成", color: "#1d4ed8", bg: "var(--pro-bg)", border: "#bfdbfe", bar: "#93c5fd", light: "var(--pro-light)", Icon: ThumbsUp },
+  con: { label: "反対", color: "#b91c1c", bg: "var(--con-bg)", border: "#fecaca", bar: "#fca5a5", light: "var(--con-light)", Icon: ThumbsDown },
 };
 
 const pct = (pro, con) => {
@@ -394,8 +407,8 @@ function StanceBar({ pro, con, showLabels=false, height=6 }) {
       </div>
       {showLabels && (
         <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, fontSize:13 }}>
-          <span style={{color:STANCE.pro.color,fontWeight:700}}>👍 賛成 {proP}%</span>
-          <span style={{color:STANCE.con.color,fontWeight:700}}>👎 反対 {conP}%</span>
+          <span style={{color:STANCE.pro.color,fontWeight:700,display:"inline-flex",alignItems:"center",gap:5}}><Icn icon={ThumbsUp} size={14}/>賛成 {proP}%</span>
+          <span style={{color:STANCE.con.color,fontWeight:700,display:"inline-flex",alignItems:"center",gap:5}}><Icn icon={ThumbsDown} size={14}/>反対 {conP}%</span>
         </div>
       )}
     </div>
@@ -415,7 +428,7 @@ function StancePicker({ current, onChange, size="md", disabled=false }) {
               border:`1.5px solid ${active?st.border:"var(--border)"}`,
               background:active?st.bg:"var(--surface)", color:active?st.color:"var(--text-4)",
               fontWeight:700, fontSize:sm?12:14, cursor:disabled?"not-allowed":"pointer", transition:"all .15s", fontFamily:"inherit" }}>
-            <span style={{fontSize:sm?12:15}}>{st.emoji}</span>{st.label}
+            <Icn icon={st.Icon} size={sm?13:16}/>{st.label}
           </button>
         );
       })}
@@ -427,9 +440,9 @@ function StanceBadge({ stance }) {
   if (!stance) return null;
   const st = STANCE[stance];
   return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 8px",
+    <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 8px",
       borderRadius:99, background:st.bg, color:st.color, fontWeight:700, fontSize:11, border:`1px solid ${st.border}` }}>
-      {st.emoji} {st.label}
+      <Icn icon={st.Icon} size={12}/> {st.label}
     </span>
   );
 }
@@ -446,7 +459,7 @@ function UserBadge({ author, size="sm" }) {
         padding: sm?"1px 6px":"2px 8px", borderRadius:99,
         background: b.color + "15", color: b.color,
         fontWeight:700, fontSize: sm?10:11, border:`1px solid ${b.color}40` }}>
-      <span style={{ fontSize: sm?10:12 }}>{b.emoji}</span>{b.label}
+      <Icn icon={b.Icon} size={sm?11:13}/>{b.label}
     </span>
   );
 }
@@ -457,7 +470,7 @@ function StatusBadge({ status, deadline }) {
     return (
       <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 9px", borderRadius:99,
         background:"var(--surface-3)", color:"var(--text-2)", fontWeight:700, fontSize:11, border:"1px solid var(--border-2)" }}>
-        🔒 決着済み
+        <Icn icon={Lock} size={11}/> 決着済み
       </span>
     );
   }
@@ -468,7 +481,7 @@ function StatusBadge({ status, deadline }) {
     <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 9px", borderRadius:99,
       background: urgent ? "var(--amber-bg)" : "#ecfdf5", color: urgent ? "#92400e" : "#065f46",
       fontWeight:700, fontSize:11, border:`1px solid ${urgent?"#fcd34d":"#a7f3d0"}` }}>
-      ⏱ {tl}
+      <Icn icon={Clock} size={11}/> {tl}
     </span>
   );
 }
@@ -542,7 +555,7 @@ function AISummary({ summary }) {
     <div style={{ background:"linear-gradient(135deg, var(--violet-1) 0%, var(--violet-2) 100%)",
       border:"1px solid var(--violet-border)", borderRadius:14, padding:"16px 18px", marginBottom:16 }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-        <span style={{ fontSize:18 }}>✨</span>
+        <Icn icon={Sparkles} size={18} style={{ color:"#7c3aed" }}/>
         <span style={{ fontWeight:800, fontSize:14, color:"#6d28d9", letterSpacing:-0.2 }}>AIによる議論要約</span>
         <span style={{ fontSize:10, background:"#7c3aed", color:"#fff", padding:"1px 7px", borderRadius:99, fontWeight:700 }}>BETA</span>
       </div>
@@ -552,7 +565,7 @@ function AISummary({ summary }) {
           return (
             <div key={s} style={{ background:"var(--surface)", borderRadius:10, padding:"12px 14px", border:`1px solid ${st.border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                <span style={{ fontSize:14 }}>{st.emoji}</span>
+                <Icn icon={st.Icon} size={14} style={{ color:st.color }}/>
                 <span style={{ fontSize:12, fontWeight:800, color:st.color }}>{st.label}の主要論点</span>
               </div>
               <ul style={{ listStyle:"none", padding:0, margin:0 }}>
@@ -641,8 +654,8 @@ function Thread({ comment, debateId, dispatch, locked }) {
           <button onClick={()=>setExpanded(!expanded)}
             style={{ background:"none", border:`1px dashed ${rootSt.border}`, cursor:"pointer",
               fontSize:12, color:rootSt.color, fontWeight:700, padding:"4px 14px",
-              borderRadius:99, fontFamily:"inherit" }}>
-            {expanded ? "▲ 折りたたむ" : `▼ 他 ${hidden} 件の返信を見る`}
+              borderRadius:99, fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:4 }}>
+            {expanded ? <><Icn icon={ChevronUp} size={13}/>折りたたむ</> : <><Icn icon={ChevronDown} size={13}/>他 {hidden} 件の返信を見る</>}
           </button>
         </div>
       )}
@@ -655,19 +668,19 @@ function Thread({ comment, debateId, dispatch, locked }) {
             <>
               <span style={{ fontSize:11, color:"var(--text-4)", alignSelf:"center" }}>このスレッドに返信:</span>
               <button onClick={()=>setReplyingStance("pro")}
-                style={{ ...replyBtn, color:STANCE.pro.color, borderColor:STANCE.pro.border, background:STANCE.pro.bg }}>
-                👍 賛成として
+                style={{ ...replyBtn, color:STANCE.pro.color, borderColor:STANCE.pro.border, background:STANCE.pro.bg, display:"inline-flex", alignItems:"center", gap:5 }}>
+                <Icn icon={ThumbsUp} size={13}/>賛成として
               </button>
               <button onClick={()=>setReplyingStance("con")}
-                style={{ ...replyBtn, color:STANCE.con.color, borderColor:STANCE.con.border, background:STANCE.con.bg }}>
-                👎 反対として
+                style={{ ...replyBtn, color:STANCE.con.color, borderColor:STANCE.con.border, background:STANCE.con.bg, display:"inline-flex", alignItems:"center", gap:5 }}>
+                <Icn icon={ThumbsDown} size={13}/>反対として
               </button>
             </>
           ) : (
             <div style={{ width:"100%", background:STANCE[replyingStance].bg,
               border:`1px solid ${STANCE[replyingStance].border}`, borderRadius:10, padding:"10px 12px" }}>
-              <p style={{ fontSize:11, fontWeight:700, color:STANCE[replyingStance].color, marginBottom:6 }}>
-                {STANCE[replyingStance].emoji} {STANCE[replyingStance].label}として返信
+              <p style={{ fontSize:11, fontWeight:700, color:STANCE[replyingStance].color, marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
+                <Icn icon={STANCE[replyingStance].Icon} size={13}/> {STANCE[replyingStance].label}として返信
               </p>
               <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2}
                 placeholder="あなたの意見を書く…"
@@ -712,10 +725,10 @@ function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCommentId
     }}>
       <span style={{ fontSize:10, color:"var(--text-4)", fontWeight:600,
         background:"var(--surface)", padding:"1px 8px", borderRadius:99,
-        border:"1px dashed var(--border)" }}>
+        border:"1px dashed var(--border)", display:"inline-flex", alignItems:"center", gap:4 }}>
         {isRebuttal
-          ? `↩ #${rowNum-1}（${STANCE[prevBubble.stance].label}）への反論`
-          : `↳ #${rowNum-1} への補強`}
+          ? <><Icn icon={CornerUpLeft} size={11}/>#{rowNum-1}（{STANCE[prevBubble.stance].label}）への反論</>
+          : <><Icn icon={CornerDownRight} size={11}/>#{rowNum-1} への補強</>}
       </span>
     </div>
   );
@@ -764,11 +777,11 @@ function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) 
               border:`1px solid ${liked ? "#fecdd3" : "transparent"}`, borderRadius:99,
               padding:"1px 7px", cursor: locked ? "default" : "pointer", fontFamily:"inherit",
               color: liked ? "#e11d48" : "var(--text-4)", fontSize:10, fontWeight:700 }}>
-            <span style={{ fontSize:11 }}>{liked ? "♥" : "♡"}</span>{fmt(bubble.score)}
+            <Icn icon={Heart} size={12} fill={liked ? "currentColor" : "none"}/>{fmt(bubble.score)}
           </button>
           <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`u/${bubble.author} のコメント`}})}
-            title="通報" style={{ background:"none", border:"none", padding:0, cursor:"pointer",
-              fontSize:10, color:"var(--border-2)" }}>🚩</button>
+            title="通報" style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"inline-flex",
+              color:"var(--border-2)" }}><Icn icon={Flag} size={12}/></button>
         </div>
       </div>
 
@@ -832,7 +845,7 @@ function SplitComments({ d, dispatch }) {
     <div>
       {locked ? (
         <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:14, padding:"16px 22px", marginBottom:14, textAlign:"center" }}>
-          <div style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:4 }}>🔒 このディベートは決着済みです</div>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:4, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Icn icon={Lock} size={15}/> このディベートは決着済みです</div>
           <p style={{ fontSize:13, color:"var(--text-3)" }}>新しい投票・コメントは投稿できません。過去の議論を閲覧してください。</p>
         </div>
       ) : (
@@ -873,7 +886,7 @@ function SplitComments({ d, dispatch }) {
           return (
             <div key={s} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px",
               background:st.bg, border:`1px solid ${st.border}`, borderRadius:10 }}>
-              <span style={{ fontSize:16 }}>{st.emoji}</span>
+              <Icn icon={st.Icon} size={16} style={{ color:st.color }}/>
               <span style={{ fontWeight:700, fontSize:14, color:st.color }}>{st.label}カラム</span>
               <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"var(--surface)",
                 color:st.color, padding:"2px 8px", borderRadius:99, border:`1px solid ${st.border}` }}>
@@ -914,7 +927,7 @@ function RelatedDebates({ current, all, dispatch }) {
   return (
     <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"16px 18px", marginTop:16 }}>
       <h4 style={{ fontWeight:800, fontSize:14, color:"var(--text)", marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
-        <span>🔗</span>関連するディベート
+        <Icn icon={Link2} size={15}/>関連するディベート
       </h4>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         {related.map(r => {
@@ -927,10 +940,10 @@ function RelatedDebates({ current, all, dispatch }) {
               onMouseLeave={e=>e.currentTarget.style.background=""}>
               <p style={{ fontSize:13, fontWeight:700, color:"var(--text)", lineHeight:1.4, marginBottom:6 }}>{r.title}</p>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                <span style={{ fontSize:11, color:STANCE.pro.color, fontWeight:700 }}>👍 {proP}%</span>
-                <span style={{ fontSize:11, color:STANCE.con.color, fontWeight:700 }}>👎 {conP}%</span>
+                <span style={{ fontSize:11, color:STANCE.pro.color, fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsUp} size={12}/>{proP}%</span>
+                <span style={{ fontSize:11, color:STANCE.con.color, fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsDown} size={12}/>{conP}%</span>
                 <StatusBadge status={r.status} deadline={r.deadline} />
-                <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>💬 {fmt(r.commentCount)}</span>
+                <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={MessageCircle} size={12}/>{fmt(r.commentCount)}</span>
               </div>
               <StanceBar pro={r.pro} con={r.con} height={4} />
             </div>
@@ -971,8 +984,8 @@ function UserPage({ author, dispatch }) {
   return (
     <div>
       <button onClick={()=>dispatch({type:"SET_USER",author:null})}
-        style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontWeight:700, fontSize:14, marginBottom:20, display:"flex", alignItems:"center", gap:4 }}>
-        ← 一覧に戻る
+        style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontWeight:700, fontSize:14, marginBottom:20, display:"flex", alignItems:"center", gap:5 }}>
+        <Icn icon={ArrowLeft} size={16}/> 一覧に戻る
       </button>
 
       <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"24px 28px", marginBottom:16 }}>
@@ -986,12 +999,12 @@ function UserPage({ author, dispatch }) {
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
               <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>u/{author}</h2>
               {isMe && <span style={{ fontSize:11, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 8px", borderRadius:99, fontWeight:700 }}>あなた</span>}
-              {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3" }}>🔥 人気ユーザー</span>}
+              {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Flame} size={12}/> 人気ユーザー</span>}
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:99,
                 background:badge.color+"15", color:badge.color, fontWeight:700, fontSize:13, border:`1px solid ${badge.color}40` }}>
-                {badge.emoji} {badge.label}
+                <Icn icon={badge.Icon} size={14}/> {badge.label}
               </span>
               <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>Rep: {rep}</span>
             </div>
@@ -1012,7 +1025,7 @@ function UserPage({ author, dispatch }) {
       </div>
 
       {/* 投稿したディベート */}
-      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px" }}>📣 投稿したディベート ({posts.length})</h3>
+      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Megaphone} size={16}/> 投稿したディベート ({posts.length})</h3>
       {posts.length === 0 ? (
         <p style={{ fontSize:13, color:"var(--text-4)", padding:"16px", textAlign:"center", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, marginBottom:20 }}>まだ投稿がありません</p>
       ) : (
@@ -1022,7 +1035,7 @@ function UserPage({ author, dispatch }) {
       )}
 
       {/* コメント・返信 */}
-      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px" }}>💬 コメント・返信 ({myBubbles.length})</h3>
+      <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px", display:"flex", alignItems:"center", gap:6 }}><Icn icon={MessageCircle} size={16}/> コメント・返信 ({myBubbles.length})</h3>
       {myBubbles.length === 0 ? (
         <p style={{ fontSize:13, color:"var(--text-4)", padding:"16px", textAlign:"center", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>まだコメントがありません</p>
       ) : (
@@ -1034,9 +1047,9 @@ function UserPage({ author, dispatch }) {
                 style={{ background:"var(--surface)", border:`1px solid ${st.border}`, borderLeft:`4px solid ${st.bar}`,
                   borderRadius:10, padding:"12px 16px", cursor:"pointer" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{st.emoji} {st.label}・{b.kind}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:st.color, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={st.Icon} size={12}/> {st.label}・{b.kind}</span>
                   <span style={{ fontSize:11, color:"var(--text-4)" }}>on「{b.debate.title}」</span>
-                  <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, marginLeft:"auto" }}>♥ {fmt(b.score)}</span>
+                  <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, marginLeft:"auto", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Heart} size={12} fill="currentColor"/> {fmt(b.score)}</span>
                 </div>
                 <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6 }}>{b.body}</p>
               </div>
@@ -1059,8 +1072,8 @@ function DebateDetail({ d, allDebates, dispatch }) {
   return (
     <div>
       <button onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}
-        style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontWeight:700, fontSize:14, marginBottom:20, display:"flex", alignItems:"center", gap:4 }}>
-        ← 一覧に戻る
+        style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontWeight:700, fontSize:14, marginBottom:20, display:"flex", alignItems:"center", gap:5 }}>
+        <Icn icon={ArrowLeft} size={16}/> 一覧に戻る
       </button>
 
       <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, overflow:"hidden", marginBottom:16 }}>
@@ -1073,7 +1086,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
         )}
         <div style={{ padding:"24px 28px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, background:"var(--surface-3)", color:"var(--text-2)", padding:"3px 10px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
+            <span style={{ fontSize:12, background:"var(--surface-3)", color:"var(--text-2)", padding:"3px 10px", borderRadius:99, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5 }}>{topic && <Icn icon={topic.Icon} size={13}/>} {topic?.name}</span>
             <button onClick={()=>dispatch({type:"SET_USER",author:d.author})}
               style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
             <span style={{ fontSize:12, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
@@ -1099,7 +1112,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
             <div style={{ padding:"14px 18px", borderRadius:12, marginBottom:20,
               background: STANCE[winner].bg, border:`1.5px solid ${STANCE[winner].border}`,
               display:"flex", alignItems:"center", gap:12 }}>
-              <span style={{ fontSize:28 }}>🏆</span>
+              <Icn icon={Trophy} size={28} style={{ color:STANCE[winner].color }}/>
               <div>
                 <p style={{ fontSize:13, fontWeight:700, color:STANCE[winner].color, marginBottom:2 }}>最終結果</p>
                 <p style={{ fontSize:16, fontWeight:800, color:STANCE[winner].color }}>
@@ -1117,7 +1130,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
                   style={{ textAlign:"center", padding:"18px 12px", borderRadius:12, cursor:locked?"default":"pointer",
                     background:active?st.bg:"var(--surface-2)", border:`1.5px solid ${active?st.border:"var(--border)"}`, transition:"all .2s",
                     opacity: locked && !active ? 0.6 : 1 }}>
-                  <div style={{ fontSize:24, marginBottom:6 }}>{st.emoji}</div>
+                  <div style={{ marginBottom:6, display:"flex", justifyContent:"center" }}><Icn icon={st.Icon} size={26} style={{ color:st.color }}/></div>
                   <div style={{ fontSize:22, fontWeight:800, color:st.color }}>{fmt(count)}</div>
                   <div style={{ fontSize:13, fontWeight:700, color:st.color, marginBottom:2 }}>{st.label}</div>
                   <div style={{ fontSize:12, color:st.color, opacity:0.8 }}>{p}%</div>
@@ -1133,7 +1146,7 @@ function DebateDetail({ d, allDebates, dispatch }) {
           <div style={{ marginTop:20, padding:"16px 18px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
               <h4 style={{ fontWeight:700, fontSize:13, color:"var(--text-2)", display:"flex", alignItems:"center", gap:6 }}>
-                📈 投票推移グラフ
+                <Icn icon={TrendingUp} size={15}/> 投票推移グラフ
               </h4>
               <div style={{ display:"flex", gap:10, fontSize:11 }}>
                 <span style={{ display:"flex", alignItems:"center", gap:4, color:STANCE.pro.color, fontWeight:700 }}>
@@ -1158,14 +1171,14 @@ function DebateDetail({ d, allDebates, dispatch }) {
           )}
 
           <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
-            <button style={cActBtn}>💬 {fmt(d.commentCount)} コメント</button>
-            <button style={cActBtn}>🔗 シェア</button>
+            <button style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={MessageCircle} size={14}/> {fmt(d.commentCount)} コメント</button>
+            <button style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Share2} size={14}/> シェア</button>
             <button onClick={()=>dispatch({type:"SAVE",id:d.id})}
-              style={{...cActBtn, color:d.saved?STANCE.pro.color:"inherit"}}>
-              {d.saved?"⭐ 保存済み":"☆ 保存"}
+              style={{...cActBtn, color:d.saved?STANCE.pro.color:"inherit", display:"inline-flex", alignItems:"center", gap:5}}>
+              <Icn icon={Bookmark} size={14} fill={d.saved?"currentColor":"none"}/> {d.saved?"保存済み":"保存"}
             </button>
             <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}})}
-              style={cActBtn}>🚩 通報</button>
+              style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Flag} size={14}/> 通報</button>
           </div>
         </div>
       </div>
@@ -1203,24 +1216,24 @@ function DebateCard({ d, dispatch }) {
       )}
       <div style={{ padding:"16px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
-          <span style={{ fontSize:11, background:"var(--surface-3)", color:"var(--text-2)", padding:"2px 8px", borderRadius:99, fontWeight:600 }}>{topic?.icon} {topic?.name}</span>
+          <span style={{ fontSize:11, background:"var(--surface-3)", color:"var(--text-2)", padding:"2px 8px", borderRadius:99, fontWeight:600, display:"inline-flex", alignItems:"center", gap:4 }}>{topic && <Icn icon={topic.Icon} size={12}/>} {topic?.name}</span>
           <button onClick={e=>{e.stopPropagation();dispatch({type:"SET_USER",author:d.author});}}
             style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:11, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
           <span style={{ fontSize:11, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
           <StatusBadge status={d.status} deadline={d.deadline} />
           {d.userStance && <StanceBadge stance={d.userStance} />}
-          {d.saved && <span style={{ fontSize:11, color:STANCE.pro.color }}>⭐</span>}
+          {d.saved && <Icn icon={Bookmark} size={12} fill="currentColor" style={{ color:STANCE.pro.color }}/>}
         </div>
         <h3 style={{ fontSize:17, fontWeight:700, color:"var(--text)", lineHeight:1.4, marginBottom:14, letterSpacing:-0.3 }}>{d.title}</h3>
         <div style={{ display:"flex", alignItems:"center", marginBottom:10 }}>
-          <div style={{ flex:1 }}>
-            <span style={{ fontSize:13, color:STANCE.pro.color, fontWeight:800 }}>👍 {fmt(d.pro)}</span>
-            <span style={{ fontSize:12, color:"#93c5fd", fontWeight:600, marginLeft:4 }}>{proP}%</span>
+          <div style={{ flex:1, display:"flex", alignItems:"center", gap:4 }}>
+            <span style={{ fontSize:13, color:STANCE.pro.color, fontWeight:800, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsUp} size={13}/> {fmt(d.pro)}</span>
+            <span style={{ fontSize:12, color:"#93c5fd", fontWeight:600 }}>{proP}%</span>
           </div>
           <div style={{ fontSize:11, color:"var(--border-2)", fontWeight:600 }}>{fmt(total)}票</div>
-          <div style={{ flex:1, textAlign:"right" }}>
-            <span style={{ fontSize:12, color:"#fca5a5", fontWeight:600, marginRight:4 }}>{conP}%</span>
-            <span style={{ fontSize:13, color:STANCE.con.color, fontWeight:800 }}>{fmt(d.con)} 👎</span>
+          <div style={{ flex:1, textAlign:"right", display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
+            <span style={{ fontSize:12, color:"#fca5a5", fontWeight:600 }}>{conP}%</span>
+            <span style={{ fontSize:13, color:STANCE.con.color, fontWeight:800, display:"inline-flex", alignItems:"center", gap:4 }}>{fmt(d.con)} <Icn icon={ThumbsDown} size={13}/></span>
           </div>
         </div>
         <StanceBar pro={d.pro} con={d.con} height={8} />
@@ -1240,12 +1253,12 @@ function DebateCard({ d, dispatch }) {
             <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} size="sm" disabled={locked} />
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            <span style={{ fontSize:12, color:"var(--text-4)" }}>💬 {fmt(d.commentCount)}</span>
-            <button onClick={e=>{e.stopPropagation();dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}});}}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:"var(--border-2)" }}>🚩</button>
-            <button onClick={e=>{e.stopPropagation();dispatch({type:"SAVE",id:d.id});}}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:d.saved?STANCE.pro.color:"var(--border-2)" }}>
-              {d.saved?"⭐":"☆"}
+            <span style={{ fontSize:12, color:"var(--text-4)", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={MessageCircle} size={13}/> {fmt(d.commentCount)}</span>
+            <button title="通報" onClick={e=>{e.stopPropagation();dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}});}}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:"var(--border-2)" }}><Icn icon={Flag} size={15}/></button>
+            <button title={d.saved?"保存を解除":"保存"} onClick={e=>{e.stopPropagation();dispatch({type:"SAVE",id:d.id});}}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:d.saved?STANCE.pro.color:"var(--border-2)" }}>
+              <Icn icon={Bookmark} size={15} fill={d.saved?"currentColor":"none"}/>
             </button>
           </div>
         </div>
@@ -1319,12 +1332,12 @@ function NewDebateModal({ dispatch }) {
         style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:520, padding:28, display:"flex", flexDirection:"column", gap:16, maxHeight:"90vh", overflowY:"auto" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <h3 style={{ fontWeight:800, fontSize:20, color:"var(--text)" }}>ディベートを作成</h3>
-          <button onClick={()=>dispatch({type:"TOGGLE_NEW"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:20, color:"var(--text-4)" }}>✕</button>
+          <button title="閉じる" onClick={()=>dispatch({type:"TOGGLE_NEW"})} style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:"var(--text-4)" }}><Icn icon={X} size={20}/></button>
         </div>
         <div>
           <label style={labelStyle}>トピック</label>
           <select value={topicId} onChange={e=>setTopicId(e.target.value)} style={inputStyle}>
-            {TOPICS.map(t=><option key={t.id} value={t.id}>{t.icon} {t.name}</option>)}
+            {TOPICS.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </div>
         <div>
@@ -1348,7 +1361,7 @@ function NewDebateModal({ dispatch }) {
                 borderRadius:99, padding:"2px 8px", fontSize:12, fontWeight:700 }}>
                 #{t}
                 <button onClick={()=>setTags(tags.filter(x=>x!==t))}
-                  style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontSize:12, padding:0, lineHeight:1 }}>✕</button>
+                  style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, padding:0, display:"inline-flex" }}><Icn icon={X} size={13}/></button>
               </span>
             ))}
             <input value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={onTagKey}
@@ -1373,15 +1386,15 @@ function NewDebateModal({ dispatch }) {
           {thumbnail ? (
             <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--border)" }}>
               <img src={thumbnail} alt="サムネイル" style={{ width:"100%", maxHeight:180, objectFit:"cover", display:"block" }} />
-              <button onClick={()=>setThumbnail(null)}
+              <button onClick={()=>setThumbnail(null)} title="画像を削除"
                 style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
-                  border:"none", borderRadius:99, width:26, height:26, cursor:"pointer", fontSize:13 }}>✕</button>
+                  border:"none", borderRadius:99, width:26, height:26, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={X} size={14}/></button>
             </div>
           ) : (
             <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6,
               padding:"20px 12px", border:"1.5px dashed var(--border-2)", borderRadius:10, cursor:"pointer",
               background:"var(--surface-2)", color:"var(--text-4)", fontSize:13, fontWeight:600 }}>
-              <span style={{ fontSize:22 }}>🖼️</span>
+              <Icn icon={ImageIcon} size={24}/>
               クリックして画像を選択
               <input type="file" accept="image/*" onChange={onFile} style={{ display:"none" }} />
             </label>
@@ -1403,8 +1416,8 @@ function NewDebateModal({ dispatch }) {
           </div>
           <p style={{ fontSize:11, color:"var(--text-4)", marginTop:6 }}>期間終了後は自動で決着フェーズに移行します</p>
         </div>
-        <div style={{ background:STANCE.pro.bg, border:`1px solid ${STANCE.pro.border}`, borderRadius:10, padding:"12px 14px", fontSize:13, color:STANCE.pro.color, display:"flex", gap:8 }}>
-          <span>💡</span><span>良いディベートテーマは「〇〇は△△か？」のように賛否を問える形が効果的です。</span>
+        <div style={{ background:STANCE.pro.bg, border:`1px solid ${STANCE.pro.border}`, borderRadius:10, padding:"12px 14px", fontSize:13, color:STANCE.pro.color, display:"flex", gap:8, alignItems:"flex-start" }}>
+          <Icn icon={Lightbulb} size={16} style={{ marginTop:1 }}/><span>良いディベートテーマは「〇〇は△△か？」のように賛否を問える形が効果的です。</span>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:11, fontWeight:700,
           color: overQuota ? STANCE.con.color : "var(--text-4)" }}>
@@ -1441,8 +1454,8 @@ function ReportModal({ target, dispatch }) {
       <div onClick={e=>e.stopPropagation()}
         style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:460, padding:26, display:"flex", flexDirection:"column", gap:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>🚩 通報する</h3>
-          <button onClick={()=>dispatch({type:"CLOSE_REPORT"})} style={{ background:"none", border:"none", cursor:"pointer", fontSize:18, color:"var(--text-4)" }}>✕</button>
+          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)", display:"flex", alignItems:"center", gap:7 }}><Icn icon={Flag} size={18}/> 通報する</h3>
+          <button title="閉じる" onClick={()=>dispatch({type:"CLOSE_REPORT"})} style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:"var(--text-4)" }}><Icn icon={X} size={18}/></button>
         </div>
         <p style={{ fontSize:13, color:"var(--text-3)" }}>対象: <strong style={{ color:"var(--text-2)" }}>{target?.label}</strong></p>
         <div>
@@ -1454,8 +1467,8 @@ function ReportModal({ target, dispatch }) {
                   border:`1.5px solid ${reason===r ? STANCE.con.border : "var(--border)"}`,
                   background: reason===r ? STANCE.con.bg : "var(--surface)",
                   color: reason===r ? STANCE.con.color : "var(--text-2)",
-                  fontWeight:700, fontSize:13 }}>
-                {reason===r ? "● " : "○ "}{r}
+                  fontWeight:700, fontSize:13, display:"flex", alignItems:"center", gap:8 }}>
+                <Icn icon={reason===r ? CircleDot : Circle} size={15}/>{r}
               </button>
             ))}
           </div>
@@ -1492,12 +1505,12 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
     return Object.values(map).sort((a,b) => b.likes - a.likes);
   }, [debates]);
 
-  const tabBtn = (id, label, badge) => (
+  const tabBtn = (id, icon, label, badge) => (
     <button onClick={()=>setTab(id)}
       style={{ padding:"8px 16px", borderRadius:99, border:"none", cursor:"pointer", fontFamily:"inherit",
         background: tab===id ? "var(--btn-active)" : "var(--surface)", color: tab===id ? "#fff" : "var(--text-2)",
         fontWeight:700, fontSize:13, display:"flex", alignItems:"center", gap:6, boxShadow:"0 1px 2px rgba(0,0,0,.04)" }}>
-      {label}{badge>0 && <span style={{ background:STANCE.con.color, color:"#fff", fontSize:10, borderRadius:99, padding:"1px 6px" }}>{badge}</span>}
+      <Icn icon={icon} size={14}/>{label}{badge>0 && <span style={{ background:STANCE.con.color, color:"#fff", fontSize:10, borderRadius:99, padding:"1px 6px" }}>{badge}</span>}
     </button>
   );
   const card = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:"14px 16px" };
@@ -1506,9 +1519,9 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
-        <span style={{ fontSize:22 }}>🛡️</span>
+        <Icn icon={Shield} size={22}/>
         <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>管理者ダッシュボード</h2>
-        <button onClick={()=>dispatch({type:"SET_ADMIN",on:false})} style={{ ...btnGhost, marginLeft:"auto", padding:"7px 16px" }}>← 戻る</button>
+        <button onClick={()=>dispatch({type:"SET_ADMIN",on:false})} style={{ ...btnGhost, marginLeft:"auto", padding:"7px 16px", display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={ArrowLeft} size={15}/> 戻る</button>
       </div>
 
       {/* 概要 */}
@@ -1522,9 +1535,9 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        {tabBtn("debates","📋 投稿管理",0)}
-        {tabBtn("reports","🚩 通報管理",openReports)}
-        {tabBtn("users","👥 ユーザー管理",0)}
+        {tabBtn("debates",ClipboardList,"投稿管理",0)}
+        {tabBtn("reports",Flag,"通報管理",openReports)}
+        {tabBtn("users",Users,"ユーザー管理",0)}
       </div>
 
       {tab==="debates" && (
@@ -1533,7 +1546,7 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
             <div key={d.id} style={{ ...card, display:"flex", alignItems:"center", gap:12 }}>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
-                <p style={{ fontSize:12, color:"var(--text-4)" }}>u/{d.author} ・ 💬{d.commentCount} ・ 👍{d.pro} 👎{d.con}</p>
+                <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>u/{d.author} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={MessageCircle} size={12}/>{d.commentCount}</span> ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsUp} size={12}/>{d.pro}</span> <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsDown} size={12}/>{d.con}</span></p>
               </div>
               <button onClick={()=>{ if(confirm(`「${d.title}」を削除しますか？`)) dispatch({type:"ADMIN_DELETE_DEBATE",id:d.id}); }} style={delBtn}>削除</button>
             </div>
@@ -1572,10 +1585,10 @@ function AdminPage({ debates, reports, bannedUsers, dispatch }) {
             const b = getBadge(repOf(u.author));
             return (
               <div key={u.author} style={{ ...card, display:"flex", alignItems:"center", gap:12, opacity: banned?0.6:1 }}>
-                <span style={{ fontSize:16 }}>{b.emoji}</span>
+                <Icn icon={b.Icon} size={16} style={{ color:b.color }}/>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)" }}>u/{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700 }}>🚫 制限中</span>}</p>
-                  <p style={{ fontSize:12, color:"var(--text-4)" }}>投稿 {u.posts} ・ コメント {u.comments} ・ ♥ {u.likes}</p>
+                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}>u/{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700, display:"inline-flex", alignItems:"center", gap:3 }}><Icn icon={Ban} size={12}/> 制限中</span>}</p>
+                  <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:5 }}>投稿 {u.posts} ・ コメント {u.comments} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={Heart} size={12} fill="currentColor"/> {u.likes}</span></p>
                 </div>
                 <button onClick={()=>dispatch({type:"ADMIN_BAN",author:u.author})}
                   style={banned
@@ -1746,7 +1759,7 @@ export default function App() {
           {isMobile && (
             <button onClick={()=>setDrawerOpen(true)} title="メニュー"
               style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
-                fontSize:18, cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)" }}>☰</button>
+                cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
           )}
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
             onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}>
@@ -1761,12 +1774,12 @@ export default function App() {
             <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"var(--text)" }}>Split</span>
             {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
-              const m = { local:["⚪ ローカル","var(--text-3)","var(--surface-3)"], loading:["⏳ 接続中","#b45309","var(--amber-bg)"], connected:["🟢 DB接続","#16a34a","var(--green-bg)"], error:["🔴 接続失敗","#dc2626","#fee2e2"] }[dbStatus];
-              return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700 }}>{m[0]}</span>;
+              const m = { local:["ローカル","var(--text-3)","var(--surface-3)"], loading:["接続中","#b45309","var(--amber-bg)"], connected:["DB接続","#16a34a","var(--green-bg)"], error:["接続失敗","#dc2626","#fee2e2"] }[dbStatus];
+              return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Circle} size={7} fill="currentColor"/>{m[0]}</span>;
             })()}
           </div>
           <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", fontSize:14, pointerEvents:"none" }}>🔍</span>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", display:"inline-flex", pointerEvents:"none" }}><Icn icon={Search} size={15}/></span>
             <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
               placeholder="ディベートを検索…"
               style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid var(--border)", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)" }} />
@@ -1775,11 +1788,11 @@ export default function App() {
             <button onClick={toggleTheme}
               title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               style={{ background:"none", color:"var(--text-2)",
-                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>{theme === "dark" ? "☀️" : "🌙"}</button>
+                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={theme === "dark" ? Sun : Moon} size={18}/></button>
             <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
               title="管理者ダッシュボード"
               style={{ background: activeAdmin ? "var(--btn-active)" : "none", color: activeAdmin ? "#fff" : "var(--text-2)",
-                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, fontSize:16, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>🛡️</button>
+                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Shield} size={18}/></button>
             <button onClick={()=>dispatch({type:"TOGGLE_NEW"})}
               style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
             {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"var(--text-2)" }}>あ</div>}
@@ -1798,16 +1811,16 @@ export default function App() {
           {isMobile && (
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <span style={{ fontWeight:800, fontSize:16, color:"var(--text)" }}>メニュー</span>
-              <button onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"var(--text-3)" }}>✕</button>
+              <button title="閉じる" onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-3)", display:"inline-flex" }}><Icn icon={X} size={20}/></button>
             </div>
           )}
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
-          {[{id:null,name:"すべて",icon:"🌐"}, ...TOPICS].map(t=>(
+          {[{id:null,name:"すべて",Icon:Globe}, ...TOPICS].map(t=>(
             <button key={t.id??"all"} onClick={()=>dispatch({type:"SET_TOPIC",id:t.id})}
               style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", borderRadius:8, border:"none",
                 background:activeTopic===t.id?STANCE.pro.bg:"none", color:activeTopic===t.id?STANCE.pro.color:"var(--text-2)",
                 fontWeight:activeTopic===t.id?700:400, fontSize:14, cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginBottom:2, transition:"background .1s" }}>
-              <span>{t.icon}</span><span style={{flex:1}}>{t.name}</span>
+              <Icn icon={t.Icon} size={16}/><span style={{flex:1}}>{t.name}</span>
               {t.members && <span style={{ fontSize:11, color:"var(--text-4)" }}>{t.members}</span>}
             </button>
           ))}
@@ -1816,7 +1829,7 @@ export default function App() {
           <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのレピュテーション</p>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-              <span style={{ fontSize:20 }}>{myBadge.emoji}</span>
+              <Icn icon={myBadge.Icon} size={20} style={{ color:myBadge.color }}/>
               <div>
                 <p style={{ fontSize:13, fontWeight:800, color:myBadge.color }}>{myBadge.label}</p>
                 <p style={{ fontSize:11, color:"var(--text-4)" }}>Rep: {myRep}</p>
@@ -1843,7 +1856,7 @@ export default function App() {
             {["pro","con"].map(s=>(
               <div key={s} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:s==="pro"?8:0 }}>
                 <div style={{ width:28, height:6, borderRadius:99, background:STANCE[s].bar }} />
-                <span style={{ fontSize:13, color:STANCE[s].color, fontWeight:700 }}>{STANCE[s].emoji} {STANCE[s].label}</span>
+                <span style={{ fontSize:13, color:STANCE[s].color, fontWeight:700, display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={STANCE[s].Icon} size={13}/> {STANCE[s].label}</span>
               </div>
             ))}
           </div>
@@ -1866,19 +1879,19 @@ export default function App() {
                     color:STANCE.pro.color, border:`1px solid ${STANCE.pro.border}`, borderRadius:99,
                     padding:"3px 12px", fontSize:13, fontWeight:700 }}>
                     #{activeTag}
-                    <button onClick={()=>dispatch({type:"SET_TAG",tag:null})}
-                      style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontSize:13, padding:0, lineHeight:1 }}>✕</button>
+                    <button title="絞り込み解除" onClick={()=>dispatch({type:"SET_TAG",tag:null})}
+                      style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, padding:0, display:"inline-flex" }}><Icn icon={X} size={14}/></button>
                   </span>
                 </div>
               )}
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px",
                 display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                  {[["hot","🔥 人気"],["new","✨ 新着"],["closing","⏱ 締切間近"],["discussion","💬 議論中"]].map(([s,l])=>(
+                  {[["hot",Flame,"人気"],["new",Sparkles,"新着"],["closing",Clock,"締切間近"],["discussion",MessageCircle,"議論中"]].map(([s,icon,l])=>(
                     <button key={s} onClick={()=>dispatch({type:"SET_SORT",sort:s})}
                       style={{ padding:"6px 12px", borderRadius:99, border:"none",
                         background:sort===s?STANCE.pro.bg:"none", color:sort===s?STANCE.pro.color:"var(--text-3)",
-                        fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all .1s" }}>{l}</button>
+                        fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all .1s", display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={icon} size={14}/>{l}</button>
                   ))}
                 </div>
                 <span style={{ fontSize:13, color:"var(--text-4)" }}>{visible.length} 件のディベート</span>
@@ -1897,27 +1910,29 @@ export default function App() {
             : { width:270, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start", display:"flex", flexDirection:"column", gap:16 } }>
             {/* 人気ユーザー */}
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>🔥 人気ユーザー</h4>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Flame} size={16}/> 人気ユーザー</h4>
               {pops.map((p, i) => {
-                const medal = ["🥇","🥈","🥉"][i] || `${i+1}`;
+                const medalColor = ["#f59e0b","#9ca3af","#b45309"][i];
                 const b = getBadge(repOf(p.author));
                 return (
                   <button key={p.author} onClick={()=>dispatch({type:"SET_USER",author:p.author})}
                     style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"6px 4px",
                       background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                    <span style={{ fontSize:14, width:20, textAlign:"center", flexShrink:0 }}>{medal}</span>
+                    <span style={{ width:20, textAlign:"center", flexShrink:0, display:"inline-flex", justifyContent:"center" }}>
+                      {medalColor ? <Icn icon={Medal} size={16} style={{ color:medalColor }}/> : <span style={{ fontSize:12, color:"var(--text-4)", fontWeight:700 }}>{i+1}</span>}
+                    </span>
                     <span style={{ fontSize:13, fontWeight:700, color:"var(--text)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>u/{p.author}</span>
-                    <span style={{ fontSize:12 }}>{b.emoji}</span>
-                    <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, flexShrink:0 }}>♥ {fmt(p.likes)}</span>
+                    <Icn icon={b.Icon} size={13} style={{ color:b.color }}/>
+                    <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, flexShrink:0, display:"inline-flex", alignItems:"center", gap:3 }}><Icn icon={Heart} size={12} fill="currentColor"/> {fmt(p.likes)}</span>
                   </button>
                 );
               })}
             </div>
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>✦ Splitとは</h4>
-              {[["🎯","テーマを選ぶ","賛否を問えるトピックを探す"],["👍👎","立場を表明","賛成か反対かを明確にする"],["💬","根拠を語る","なぜそう思うかをコメントで"],["📊","分布を見る","リアルタイムで賛否が動く"],["🏆","決着を見る","期間終了で勝敗が確定"]].map(([icon,t,desc])=>(
-                <div key={t} style={{ display:"flex", gap:10, marginBottom:10 }}>
-                  <span style={{ fontSize:15, flexShrink:0 }}>{icon}</span>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Splitとは</h4>
+              {[[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]].map(([icon,t,desc])=>(
+                <div key={t} style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start" }}>
+                  <Icn icon={icon} size={16} style={{ marginTop:2, color:"var(--text-3)" }}/>
                   <div><p style={{ fontSize:13, fontWeight:600, color:"var(--text)" }}>{t}</p><p style={{ fontSize:12, color:"var(--text-3)" }}>{desc}</p></div>
                 </div>
               ))}
@@ -1925,10 +1940,10 @@ export default function App() {
 
             {/* Badge guide */}
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"var(--text)" }}>🏅 バッジ一覧</h4>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:10, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Award} size={16}/> バッジ一覧</h4>
               {BADGES.map(b => (
                 <div key={b.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
-                  <span style={{ fontSize:14 }}>{b.emoji}</span>
+                  <Icn icon={b.Icon} size={14} style={{ color:b.color }}/>
                   <span style={{ fontSize:12, fontWeight:700, color:b.color }}>{b.label}</span>
                   <span style={{ fontSize:11, color:"var(--text-4)", marginLeft:"auto" }}>{b.min}+ Rep</span>
                 </div>
@@ -1941,10 +1956,10 @@ export default function App() {
                 <div style={{ flex:totalCon, background:STANCE.con.bar }} />
               </div>
               <div style={{ padding:16 }}>
-                <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)" }}>📊 全体の傾向</h4>
+                <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={BarChart3} size={16}/> 全体の傾向</h4>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:10 }}>
-                  <span style={{ color:STANCE.pro.color, fontWeight:700 }}>👍 賛成 {gProP}%</span>
-                  <span style={{ color:STANCE.con.color, fontWeight:700 }}>👎 反対 {gConP}%</span>
+                  <span style={{ color:STANCE.pro.color, fontWeight:700, display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={ThumbsUp} size={13}/> 賛成 {gProP}%</span>
+                  <span style={{ color:STANCE.con.color, fontWeight:700, display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={ThumbsDown} size={13}/> 反対 {gConP}%</span>
                 </div>
                 <StanceBar pro={totalPro} con={totalCon} height={10} />
                 <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>全 {debates.length} ディベートの合計</p>
