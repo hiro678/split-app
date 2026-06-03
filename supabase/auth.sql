@@ -46,5 +46,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- ── アバター列（プロフィールアイコン） ──────────────────────────
+alter table profiles add column if not exists avatar text;
+
 -- ── 管理者の付与（自分のアカウント作成後に実行） ──────────────────
 --   update profiles set is_admin = true where username = 'あなたのユーザー名';

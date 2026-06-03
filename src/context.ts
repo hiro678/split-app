@@ -7,7 +7,9 @@ export type AppCtx = {
   myRep: number;
   me: string | null;
   isAuthed: boolean;
+  myAvatar?: string | null;
+  setAvatar?: (id: string) => void;
 };
 
 // ─── App context (dispatch / debates / 動的rep を配布) ────────────
-export const AppContext = createContext<AppCtx>({ dispatch: () => {}, debates: [], myRep: 0, me: null, isAuthed: false });
+export const AppContext = createContext<AppCtx>({ dispatch: () => {}, debates: [], myRep: 0, me: null, isAuthed: false, myAvatar: null, setAvatar: () => {} });

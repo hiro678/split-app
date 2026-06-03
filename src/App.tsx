@@ -1,6 +1,6 @@
 import { useState, useReducer, useMemo, useContext, createContext, useEffect, useRef, useCallback } from "react";
 import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates,
-  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile } from "./lib/supabase";
+  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile, updateAvatar } from "./lib/supabase";
 import { INIT_DEBATES } from "./data/seedDebates";
 import {
   ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
@@ -13,6 +13,7 @@ import {
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer } from "./lib/logic";
 import { AppContext } from "./context";
+import { AVATARS, Avatar } from "./avatars";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
 
 import { Icn } from "./ui/Icn";
@@ -56,6 +57,23 @@ export default function App() {
   const isAdminUser = isSupabaseConfigured ? !!profile?.is_admin : false;
   const authRef = useRef<{ isAuthed: boolean; open: () => void }>({ isAuthed: false, open: () => {} });
   authRef.current = { isAuthed, open: () => setAuthOpen(true) };
+  const sessionRef = useRef<any>(null);
+  sessionRef.current = session;
+
+  // ── アバター（DBは profiles.avatar / ローカルは localStorage） ──
+  const [localAvatar, setLocalAvatar] = useState<string | null>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("split-avatar") : null);
+  const myAvatar = isSupabaseConfigured ? ((profile as any)?.avatar ?? null) : localAvatar;
+  const setAvatar = useCallback((id: string) => {
+    if (isSupabaseConfigured) {
+      setProfile((p: any) => p ? { ...p, avatar: id } : p);
+      const uid = sessionRef.current?.user?.id;
+      if (uid) updateAvatar(uid, id);
+    } else {
+      setLocalAvatar(id);
+      localStorage.setItem("split-avatar", id);
+    }
+  }, []);
 
   // ── トースト通知 ────────────────────────────────────────────
   const [toast, setToast] = useState(null);
@@ -234,7 +252,7 @@ export default function App() {
   const adminAllowed = isSupabaseConfigured ? isAdminUser : adminUnlocked;
 
   return (
-    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed }}>
+    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -317,9 +335,8 @@ export default function App() {
             {isAuthed ? (
               <div style={{ position:"relative", flexShrink:0 }}>
                 <button onClick={()=>setUserMenuOpen(o=>!o)} title="アカウント" aria-label="アカウントメニュー"
-                  style={{ width:34, height:34, borderRadius:50, border:"none", cursor:"pointer", padding:0,
-                    background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, color:"var(--text-2)", fontFamily:"inherit" }}>
-                  {me ? me[0].toUpperCase() : "?"}
+                  style={{ width:34, height:34, borderRadius:50, border:"none", cursor:"pointer", padding:0, display:"flex", background:"none" }}>
+                  <Avatar id={myAvatar} size={34} fallback={me ? me[0].toUpperCase() : "?"} />
                 </button>
                 {userMenuOpen && (
                   <>

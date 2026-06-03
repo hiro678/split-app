@@ -37,7 +37,14 @@ export function onAuthChange(cb) {
   const { data } = supabase.auth.onAuthStateChange((_event, session) => cb(session));
   return () => data.subscription.unsubscribe();
 }
-// プロフィール（username / is_admin）を取得
+// アバター（profiles.avatar）を更新
+export async function updateAvatar(userId, avatar) {
+  if (!supabase || !userId) return;
+  const { error } = await supabase.from("profiles").update({ avatar }).eq("id", userId);
+  if (error) console.error("[supabase] updateAvatar", error);
+}
+
+// プロフィール（username / is_admin / avatar）を取得
 export async function fetchProfile(userId) {
   if (!supabase || !userId) return null;
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();

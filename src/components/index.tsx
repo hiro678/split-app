@@ -6,6 +6,7 @@ import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perk
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
+import { AVATARS, Avatar } from "../avatars";
 
 // ─── メンション（@username） ──────────────────────────────────────
 const MENTION_RE = /@([A-Za-z0-9_]+)/g;
@@ -492,19 +493,23 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCo
 }
 
 export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) {
-  const { dispatch } = useContext(AppContext);
+  const { dispatch, me, myAvatar } = useContext(AppContext);
   const liked = bubble.vote === 1;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:4, flexWrap:"wrap",
         flexDirection: isPro ? "row" : "row-reverse" }}>
-        <div style={{ width:20, height:20, borderRadius:50, flexShrink:0,
-          background:st.bg, border:`1px solid ${st.border}`,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:9, fontWeight:800, color:st.color }}>
-          {bubble.author[0].toUpperCase()}
-        </div>
+        {bubble.author === me && myAvatar ? (
+          <Avatar id={myAvatar} size={20} fallback={bubble.author[0].toUpperCase()} />
+        ) : (
+          <div style={{ width:20, height:20, borderRadius:50, flexShrink:0,
+            background:st.bg, border:`1px solid ${st.border}`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:9, fontWeight:800, color:st.color }}>
+            {bubble.author[0].toUpperCase()}
+          </div>
+        )}
         <button onClick={()=>dispatch({type:"SET_USER",author:bubble.author})}
           style={{ background:"none", border:"none", padding:0, cursor:"pointer",
             fontWeight:700, fontSize:11, color:"var(--text)", fontFamily:"inherit" }}>@{bubble.author}</button>
@@ -701,7 +706,7 @@ export function RelatedDebates({ current, all, dispatch }) {
 
 // ─── User Page (マイページ / プロフィール) ───────────────────────
 export function UserPage({ author, dispatch }) {
-  const { debates, myRep, me } = useContext(AppContext);
+  const { debates, myRep, me, myAvatar, setAvatar } = useContext(AppContext);
   const rep = author === me ? myRep : repOf(author);
   const badge = getBadge(rep);
   const perk = perkOf(rep);
@@ -735,11 +740,7 @@ export function UserPage({ author, dispatch }) {
 
       <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"24px 28px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
-          <div style={{ width:64, height:64, borderRadius:50, flexShrink:0,
-            background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, fontWeight:800, color:"var(--text-2)" }}>
-            {author[0].toUpperCase()}
-          </div>
+          <Avatar id={isMe ? myAvatar : null} size={64} fallback={author[0].toUpperCase()} />
           <div style={{ minWidth:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
               <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>@{author}</h2>
@@ -769,6 +770,39 @@ export function UserPage({ author, dispatch }) {
           </div>
         )}
       </div>
+
+      {/* アバター選択（自分のページのみ） */}
+      {isMe && setAvatar && (
+        <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 20px", marginBottom:16 }}>
+          <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", marginBottom:4 }}>アイコンを選ぶ</h3>
+          <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:14 }}>ランクが上がると選べるアイコンが増えます（実績解放）。</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(84px, 1fr))", gap:10 }}>
+            {AVATARS.map(a => {
+              const unlocked = badge.tier >= a.unlockTier;
+              const selected = myAvatar === a.id;
+              return (
+                <button key={a.id} disabled={!unlocked} onClick={()=> unlocked && setAvatar(a.id)}
+                  title={unlocked ? a.name : `Lv.${a.unlockTier} で解放`}
+                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"10px 6px", borderRadius:12,
+                    border:`2px solid ${selected ? STANCE.pro.color : "var(--border)"}`,
+                    background: selected ? STANCE.pro.bg : "var(--surface-2)",
+                    cursor: unlocked ? "pointer" : "not-allowed", fontFamily:"inherit", opacity: unlocked ? 1 : 0.6 }}>
+                  <div style={{ position:"relative", lineHeight:0 }}>
+                    <Avatar id={a.id} size={52} />
+                    {!unlocked && (
+                      <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <Icn icon={Lock} size={18} style={{ color:"#fff" }}/>
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, color: selected ? STANCE.pro.color : "var(--text-2)" }}>{a.name}</span>
+                  {!unlocked && <span style={{ fontSize:10, color:"var(--text-4)" }}>Lv.{a.unlockTier}で解放</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 投稿したディベート */}
       <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", margin:"0 0 10px 2px", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Megaphone} size={16}/> 投稿したディベート ({posts.length})</h3>
