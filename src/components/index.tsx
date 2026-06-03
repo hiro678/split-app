@@ -1,11 +1,110 @@
 // プレゼンテーション層コンポーネント一式
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useRef } from "react";
 import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated } from "../lib/logic";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
+
+// ─── メンション（@username） ──────────────────────────────────────
+const MENTION_RE = /@([A-Za-z0-9_]+)/g;
+
+// メンション候補となる既知ユーザー名（投稿者・コメント者から重複排除）
+function mentionableUsers(debates: any[]): string[] {
+  const set = new Set<string>();
+  for (const d of debates) {
+    if (d.author) set.add(d.author);
+    for (const b of allBubbles([d])) if (b.author) set.add(b.author);
+  }
+  return [...set];
+}
+
+// 本文中の @username をクリック可能なリンクとして描画
+function renderBody(text: string, dispatch: any) {
+  const nodes: any[] = [];
+  let last = 0, i = 0, m: RegExpExecArray | null;
+  MENTION_RE.lastIndex = 0;
+  while ((m = MENTION_RE.exec(text))) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const name = m[1];
+    nodes.push(
+      <button key={`m${i++}`} onClick={(e) => { e.stopPropagation(); dispatch({ type: "SET_USER", author: name }); }}
+        style={{ background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer",
+          fontFamily: "inherit", fontSize: "inherit", lineHeight: "inherit", color: STANCE.pro.color, fontWeight: 700 }}>
+        @{name}
+      </button>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
+// 候補サジェスト付きテキストエリア（@入力でユーザー名を補完）
+export function MentionTextarea({ value, onChange, users = [], onKeyDown, style, ...rest }: any) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [idx, setIdx] = useState(0);
+
+  const matches = useMemo(() => {
+    if (!open) return [];
+    const q = query.toLowerCase();
+    return (users as string[]).filter(u => u && /^[A-Za-z0-9_]+$/.test(u) && u.toLowerCase().includes(q)).slice(0, 6);
+  }, [open, query, users]);
+
+  const detect = (val: string, caret: number) => {
+    const before = val.slice(0, caret);
+    const m = before.match(/@([A-Za-z0-9_]*)$/);
+    if (m) { setOpen(true); setQuery(m[1]); setIdx(0); } else setOpen(false);
+  };
+
+  const handleChange = (e: any) => { onChange(e.target.value); detect(e.target.value, e.target.selectionStart); };
+
+  const pick = (name: string) => {
+    const el = ref.current; if (!el) return;
+    const caret = el.selectionStart;
+    const before = value.slice(0, caret);
+    const m = before.match(/@([A-Za-z0-9_]*)$/);
+    if (!m) return;
+    const start = before.length - m[0].length;
+    const newVal = value.slice(0, start) + "@" + name + " " + value.slice(caret);
+    onChange(newVal);
+    setOpen(false);
+    const newCaret = start + name.length + 2;
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(newCaret, newCaret); });
+  };
+
+  const handleKeyDown = (e: any) => {
+    if (open && matches.length) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => (i + 1) % matches.length); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setIdx(i => (i - 1 + matches.length) % matches.length); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(matches[idx]); return; }
+      if (e.key === "Escape") { setOpen(false); return; }
+    }
+    onKeyDown?.(e);
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <textarea ref={ref} value={value} onChange={handleChange} onKeyDown={handleKeyDown}
+        onBlur={() => setTimeout(() => setOpen(false), 120)} style={style} {...rest} />
+      {open && matches.length > 0 && (
+        <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 60, minWidth: 180, maxWidth: "100%",
+          background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,.16)", overflow: "hidden" }}>
+          {matches.map((u, i) => (
+            <button key={u} type="button" onMouseDown={(e) => { e.preventDefault(); pick(u); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "7px 12px",
+                background: i === idx ? "var(--surface-2)" : "none", border: "none", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+              <span style={{ color: STANCE.pro.color, fontWeight: 700 }}>@{u}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function StanceBar({ pro, con, showLabels=false, height=6 }) {
   const { proP, conP } = pct(pro, con);
@@ -219,6 +318,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
   const [replyText, setReplyText] = useState("");
   const [expanded, setExpanded] = useState(false);
   const overQuota = myUsage(debates, me).comments >= perkOf(myRep).comments;
+  const mentionUsers = useMemo(() => mentionableUsers(debates), [debates]);
 
   const replies = comment.replies || [];
   const shown = expanded ? replies : replies.slice(0, REPLY_LIMIT);
@@ -292,10 +392,10 @@ export function Thread({ comment, debateId, dispatch, locked }) {
               <p style={{ fontSize:11, fontWeight:700, color:STANCE[replyingStance].color, marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
                 <Icn icon={STANCE[replyingStance].Icon} size={13}/> {STANCE[replyingStance].label}として返信
               </p>
-              <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2}
-                placeholder="あなたの意見を書く…"
+              <MentionTextarea value={replyText} onChange={setReplyText} users={mentionUsers} rows={2}
+                placeholder="あなたの意見を書く…（@でメンション）"
                 style={{ width:"100%", padding:"7px 10px", border:`1px solid ${STANCE[replyingStance].border}`,
-                  borderRadius:8, fontSize:13, fontFamily:"inherit", resize:"vertical", outline:"none", background:"var(--surface)" }} />
+                  borderRadius:8, fontSize:13, fontFamily:"inherit", resize:"vertical", outline:"none", background:"var(--surface)", color:"var(--text)" }} />
               <div style={{ display:"flex", gap:8, marginTop:7 }}>
                 <button onClick={submitReply} disabled={!replyText.trim() || overQuota}
                   style={{ background:STANCE[replyingStance].color, color:"#fff", border:"none", borderRadius:99,
@@ -376,7 +476,7 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
         </div>
         <button onClick={()=>dispatch({type:"SET_USER",author:bubble.author})}
           style={{ background:"none", border:"none", padding:0, cursor:"pointer",
-            fontWeight:700, fontSize:11, color:"var(--text)", fontFamily:"inherit" }}>u/{bubble.author}</button>
+            fontWeight:700, fontSize:11, color:"var(--text)", fontFamily:"inherit" }}>@{bubble.author}</button>
         <UserBadge author={bubble.author} size="sm" />
         <div style={{ display:"flex", alignItems:"center", gap:6,
           marginLeft: isPro ? "auto" : 0, marginRight: isPro ? 0 : "auto",
@@ -389,7 +489,7 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
               color: liked ? "#e11d48" : "var(--text-4)", fontSize:10, fontWeight:700 }}>
             <Icn icon={Heart} size={12} fill={liked ? "currentColor" : "none"}/>{fmt(bubble.score)}
           </button>
-          <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`u/${bubble.author} のコメント`}})}
+          <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`@${bubble.author} のコメント`}})}
             title="通報" style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"inline-flex",
               color:"var(--border-2)" }}><Icn icon={Flag} size={12}/></button>
         </div>
@@ -416,7 +516,7 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
         }}>
           #{rowNum}{isRoot ? " 起点" : ""}
         </span>
-        {bubble.body}
+        {renderBody(bubble.body, dispatch)}
       </div>
     </div>
   );
@@ -429,6 +529,7 @@ export function SplitComments({ d, dispatch }) {
   const [text, setText] = useState("");
   const [myStance, setMyStance] = useState("pro");
   const locked = d.status === "closed";
+  const mentionUsers = useMemo(() => mentionableUsers(debates), [debates]);
   const perk = perkOf(myRep);
   const usedComments = myUsage(debates, me).comments;
   const overQuota = usedComments >= perk.comments;
@@ -463,7 +564,7 @@ export function SplitComments({ d, dispatch }) {
       ) : (
         <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, flexWrap:"wrap", gap:6 }}>
-            <p style={{ fontSize:13, color:"var(--text-3)" }}>u/{me} として新しいスレッドを開始</p>
+            <p style={{ fontSize:13, color:"var(--text-3)" }}>@{me} として新しいスレッドを開始</p>
             <span style={{ fontSize:11, fontWeight:700, color: overQuota ? STANCE.con.color : "var(--text-4)" }}>
               今月のコメント {usedComments}/{perk.comments}
             </span>
@@ -478,9 +579,9 @@ export function SplitComments({ d, dispatch }) {
             <span style={{ fontSize:13, fontWeight:700, color:"var(--text-2)" }}>立場を選択：</span>
             <StancePicker current={myStance} onChange={setMyStance} />
           </div>
-          <textarea value={text} onChange={e=>setText(e.target.value)} rows={3}
-            placeholder="あなたの意見・論点を書いてください…"
-            style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"var(--text)" }} />
+          <MentionTextarea value={text} onChange={setText} users={mentionUsers} rows={3}
+            placeholder="あなたの意見・論点を書いてください…（@でメンション）"
+            style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"var(--text)", background:"var(--surface)" }} />
           <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
             <button onClick={submit} disabled={!text.trim() || overQuota}
               style={{ background:STANCE.pro.color, color:"#fff", border:"none", borderRadius:99, padding:"8px 22px", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -609,7 +710,7 @@ export function UserPage({ author, dispatch }) {
           </div>
           <div style={{ minWidth:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
-              <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>u/{author}</h2>
+              <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>@{author}</h2>
               {isMe && <span style={{ fontSize:11, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 8px", borderRadius:99, fontWeight:700 }}>あなた</span>}
               {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Flame} size={12}/> 人気ユーザー</span>}
             </div>
@@ -664,7 +765,7 @@ export function UserPage({ author, dispatch }) {
                   <span style={{ fontSize:11, color:"var(--text-4)" }}>on「{b.debate.title}」</span>
                   <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, marginLeft:"auto", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Heart} size={12} fill="currentColor"/> {fmt(b.score)}</span>
                 </div>
-                <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6 }}>{b.body}</p>
+                <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6 }}>{renderBody(b.body, dispatch)}</p>
               </div>
             );
           })}
@@ -701,7 +802,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
             <span style={{ fontSize:12, background:"var(--surface-3)", color:"var(--text-2)", padding:"3px 10px", borderRadius:99, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5 }}>{topic && <Icn icon={topic.Icon} size={13}/>} {topic?.name}</span>
             <button onClick={()=>dispatch({type:"SET_USER",author:d.author})}
-              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
+              style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12, color:"var(--text-4)", fontFamily:"inherit" }}>@{d.author}</button>
             <span style={{ fontSize:12, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
             <UserBadge author={d.author} />
             <StatusBadge status={d.status} deadline={d.deadline} />
@@ -840,7 +941,7 @@ export function DebateCard({ d, dispatch }) {
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
           <span style={{ fontSize:11, background:"var(--surface-3)", color:"var(--text-2)", padding:"2px 8px", borderRadius:99, fontWeight:600, display:"inline-flex", alignItems:"center", gap:4 }}>{topic && <Icn icon={topic.Icon} size={12}/>} {topic?.name}</span>
           <button onClick={e=>{e.stopPropagation();dispatch({type:"SET_USER",author:d.author});}}
-            style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:11, color:"var(--text-4)", fontFamily:"inherit" }}>u/{d.author}</button>
+            style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:11, color:"var(--text-4)", fontFamily:"inherit" }}>@{d.author}</button>
           <span style={{ fontSize:11, color:"var(--text-4)" }}>• {ago(d.createdAt)}</span>
           <StatusBadge status={d.status} deadline={d.deadline} />
           {d.userStance && <StanceBadge stance={d.userStance} />}
@@ -1168,7 +1269,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
             <div key={d.id} style={{ ...card, display:"flex", alignItems:"center", gap:12 }}>
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
-                <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>u/{d.author} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={MessageCircle} size={12}/>{d.commentCount}</span> ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsUp} size={12}/>{d.pro}</span> <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsDown} size={12}/>{d.con}</span></p>
+                <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>@{d.author} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={MessageCircle} size={12}/>{d.commentCount}</span> ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsUp} size={12}/>{d.pro}</span> <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsDown} size={12}/>{d.con}</span></p>
               </div>
               <button onClick={()=>{ if(confirm(`「${d.title}」を削除しますか？`)) dispatch({type:"ADMIN_DELETE_DEBATE",id:d.id}); }} style={delBtn}>削除</button>
             </div>
@@ -1209,7 +1310,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
               <div key={u.author} style={{ ...card, display:"flex", alignItems:"center", gap:12, opacity: banned?0.6:1 }}>
                 <Icn icon={b.Icon} size={16} style={{ color:b.color }}/>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}>u/{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700, display:"inline-flex", alignItems:"center", gap:3 }}><Icn icon={Ban} size={12}/> 制限中</span>}</p>
+                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}>@{u.author} {banned && <span style={{ fontSize:11, color:"#b45309", fontWeight:700, display:"inline-flex", alignItems:"center", gap:3 }}><Icn icon={Ban} size={12}/> 制限中</span>}</p>
                   <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:5 }}>投稿 {u.posts} ・ コメント {u.comments} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={Heart} size={12} fill="currentColor"/> {u.likes}</span></p>
                 </div>
                 <button onClick={()=>dispatch({type:"ADMIN_BAN",author:u.author})}

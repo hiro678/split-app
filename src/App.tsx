@@ -321,7 +321,7 @@ export default function App() {
                       border:"1px solid var(--border)", borderRadius:12, boxShadow:"0 8px 28px rgba(0,0,0,.16)", padding:6 }}>
                       <div style={{ padding:"8px 12px", borderBottom:"1px solid var(--border)", marginBottom:4 }}>
                         <p style={{ fontSize:12, color:"var(--text-4)" }}>ログイン中</p>
-                        <p style={{ fontSize:13, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis" }}>u/{me}</p>
+                        <p style={{ fontSize:13, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis" }}>@{me}</p>
                       </div>
                       <button onClick={()=>{ setUserMenuOpen(false); dispatch({type:"SET_USER",author:me}); }}
                         style={menuItem}><Icn icon={Sprout} size={15}/> マイページ</button>
@@ -474,7 +474,7 @@ export default function App() {
                     <span style={{ width:20, textAlign:"center", flexShrink:0, display:"inline-flex", justifyContent:"center" }}>
                       {medalColor ? <Icn icon={Medal} size={16} style={{ color:medalColor }}/> : <span style={{ fontSize:12, color:"var(--text-4)", fontWeight:700 }}>{i+1}</span>}
                     </span>
-                    <span style={{ fontSize:13, fontWeight:700, color:"var(--text)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>u/{p.author}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"var(--text)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{p.author}</span>
                     <Icn icon={b.Icon} size={13} style={{ color:b.color }}/>
                     <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, flexShrink:0, display:"inline-flex", alignItems:"center", gap:3 }}><Icn icon={Heart} size={12} fill="currentColor"/> {fmt(p.likes)}</span>
                   </button>
