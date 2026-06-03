@@ -12,6 +12,39 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
 
 export const supabase = isSupabaseConfigured ? createClient(url, anonKey) : null;
 
+// ─── 認証（メール＋パスワード） ─────────────────────────────────────
+// username は user_metadata に格納し、DB トリガー handle_new_user が
+// profiles 行を自動作成します（supabase/auth.sql 参照）。
+export async function signUp(email, password, username) {
+  if (!supabase) return { error: { message: "DB未接続" } };
+  return supabase.auth.signUp({ email, password, options: { data: { username } } });
+}
+export async function signIn(email, password) {
+  if (!supabase) return { error: { message: "DB未接続" } };
+  return supabase.auth.signInWithPassword({ email, password });
+}
+export async function signOut() {
+  if (!supabase) return;
+  return supabase.auth.signOut();
+}
+export async function getSession() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+export function onAuthChange(cb) {
+  if (!supabase) return () => {};
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => cb(session));
+  return () => data.subscription.unsubscribe();
+}
+// プロフィール（username / is_admin）を取得
+export async function fetchProfile(userId) {
+  if (!supabase || !userId) return null;
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+  if (error) { console.error("[supabase] fetchProfile", error); return null; }
+  return data;
+}
+
 // ─── 読み込み: ネスト構造 (debates → comments → replies) を復元 ───
 export async function fetchDebates() {
   if (!supabase) return null;

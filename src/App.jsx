@@ -1,5 +1,6 @@
 import { useState, useReducer, useMemo, useContext, createContext, useEffect, useRef, useCallback } from "react";
-import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates } from "./lib/supabase";
+import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates,
+  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile } from "./lib/supabase";
 import {
   ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
   MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Award, Medal,
@@ -56,7 +57,7 @@ const USER_REP = {
 const repOf = (author) => USER_REP[author] ?? 0;
 
 // ─── App context (dispatch / debates / 動的rep を配布) ────────────
-const AppContext = createContext({ dispatch: () => {}, debates: [], myRep: 0 });
+const AppContext = createContext({ dispatch: () => {}, debates: [], myRep: 0, me: null, isAuthed: false });
 
 // ─── Likes / 人気ユーザー ─────────────────────────────────────────
 const allBubbles = (debates) => {
@@ -85,16 +86,17 @@ const popularUsers = (debates, limit = 5) => {
 };
 
 // ─── ランク / モチベーション ──────────────────────────────────────
-const myUsage = (debates) => ({
-  posts: debates.filter(d => d.author === "あなた").length,
-  comments: allBubbles(debates).filter(b => b.author === "あなた").length,
+const myUsage = (debates, me) => ({
+  posts: debates.filter(d => d.author === me).length,
+  comments: allBubbles(debates).filter(b => b.author === me).length,
 });
 
-// あなたの rep は活動で動的に増える（投稿/コメント/被いいね）
-const computeMyRep = (debates) => {
-  const base = USER_REP["あなた"] ?? 0;
-  const { posts, comments } = myUsage(debates);
-  const likes = likesReceived("あなた", debates);
+// 自分の rep は活動で動的に増える（投稿/コメント/被いいね）
+const computeMyRep = (debates, me) => {
+  if (!me) return 0;
+  const base = USER_REP[me] ?? 0;
+  const { posts, comments } = myUsage(debates, me);
+  const likes = likesReceived(me, debates);
   return base + posts * 30 + comments * 10 + likes * 5;
 };
 
@@ -111,9 +113,14 @@ const perkOf = (rep) => RANK_PERKS[getBadge(rep).id];
 // ─── 通報理由 ─────────────────────────────────────────────────────
 const REPORT_REASONS = ["スパム・宣伝", "誹謗中傷・嫌がらせ", "虚偽・誤情報", "暴力的・不適切な内容", "その他"];
 
-// ─── 管理者パスコード（暫定ガード） ───────────────────────────────
-//  クライアント側の簡易ロック。本番では Supabase Auth + ロール(RLS) に置換すること。
+// ─── 管理者パスコード（ローカルモード用の暫定ガード） ─────────────
+//  DB接続時は profiles.is_admin で判定。ローカルデモ時のみこのコードを使用。
 const ADMIN_PASSCODE = "split-admin";
+
+// ─── ログイン必須アクション（DBモードのみ強制） ───────────────────
+const NEEDS_AUTH = new Set([
+  "SET_STANCE", "ADD_COMMENT", "ADD_REPLY", "ADD_DEBATE", "LIKE", "SAVE", "REPORT",
+]);
 
 // ─── Vote history (時系列データ) ──────────────────────────────────
 const genHistory = (finalPro, finalCon, hours=24) => {
@@ -454,7 +461,7 @@ function StanceBadge({ stance }) {
 // ─── Reputation Badge ─────────────────────────────────────────────
 function UserBadge({ author, size="sm" }) {
   const ctx = useContext(AppContext);
-  const rep = author === "あなた" ? (ctx.myRep ?? repOf(author)) : repOf(author);
+  const rep = author === ctx.me ? (ctx.myRep ?? repOf(author)) : repOf(author);
   const b = getBadge(rep);
   const sm = size==="sm";
   return (
@@ -608,11 +615,11 @@ const REPLY_LIMIT = 3;
 //   └─────────────┴─────────────┘
 
 function Thread({ comment, debateId, dispatch, locked }) {
-  const { myRep, debates } = useContext(AppContext);
+  const { myRep, debates, me } = useContext(AppContext);
   const [replyingStance, setReplyingStance] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [expanded, setExpanded] = useState(false);
-  const overQuota = myUsage(debates).comments >= perkOf(myRep).comments;
+  const overQuota = myUsage(debates, me).comments >= perkOf(myRep).comments;
 
   const replies = comment.replies || [];
   const shown = expanded ? replies : replies.slice(0, REPLY_LIMIT);
@@ -624,7 +631,7 @@ function Thread({ comment, debateId, dispatch, locked }) {
   const submitReply = () => {
     if (!replyText.trim() || !replyingStance || overQuota) return;
     dispatch({ type:"ADD_REPLY", debateId, commentId:comment.id, stance:comment.stance,
-      reply:{ id:Date.now(), author:"あなた", stance:replyingStance, body:replyText.trim(), score:1, vote:1 }
+      reply:{ id:Date.now(), author:me, stance:replyingStance, body:replyText.trim(), score:1, vote:1 }
     });
     setReplyText(""); setReplyingStance(null);
   };
@@ -823,12 +830,12 @@ const replyBtn = {
 
 // ─── Comment section: 全スレッドを時系列で表示 ───────────────────
 function SplitComments({ d, dispatch }) {
-  const { myRep, debates } = useContext(AppContext);
+  const { myRep, debates, me, isAuthed } = useContext(AppContext);
   const [text, setText] = useState("");
   const [myStance, setMyStance] = useState("pro");
   const locked = d.status === "closed";
   const perk = perkOf(myRep);
-  const usedComments = myUsage(debates).comments;
+  const usedComments = myUsage(debates, me).comments;
   const overQuota = usedComments >= perk.comments;
 
   // 全rootコメント (賛成・反対) を時系列で混ぜて表示
@@ -840,14 +847,20 @@ function SplitComments({ d, dispatch }) {
   const submit = () => {
     if (!text.trim() || locked || overQuota) return;
     dispatch({ type:"ADD_COMMENT", debateId:d.id, stance:myStance,
-      comment:{ id:Date.now(), author:"あなた", stance:myStance, body:text.trim(), score:1, vote:1, replies:[] }
+      comment:{ id:Date.now(), author:me, stance:myStance, body:text.trim(), score:1, vote:1, replies:[] }
     });
     setText("");
   };
 
   return (
     <div>
-      {locked ? (
+      {!isAuthed ? (
+        <div onClick={()=>dispatch({type:"ADD_COMMENT"})}
+          style={{ background:"var(--surface-2)", border:"1.5px dashed var(--border)", borderRadius:14, padding:"16px 22px", marginBottom:14, textAlign:"center", cursor:"pointer" }}>
+          <p style={{ fontSize:13, fontWeight:700, color:"var(--text-2)" }}>議論に参加するにはログインが必要です</p>
+          <p style={{ fontSize:12, color:"var(--text-3)", marginTop:4 }}>クリックしてログイン / 新規登録</p>
+        </div>
+      ) : locked ? (
         <div style={{ background:"var(--surface-2)", border:"1.5px solid var(--border)", borderRadius:14, padding:"16px 22px", marginBottom:14, textAlign:"center" }}>
           <div style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:4, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><Icn icon={Lock} size={15}/> このディベートは決着済みです</div>
           <p style={{ fontSize:13, color:"var(--text-3)" }}>新しい投票・コメントは投稿できません。過去の議論を閲覧してください。</p>
@@ -855,7 +868,7 @@ function SplitComments({ d, dispatch }) {
       ) : (
         <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, flexWrap:"wrap", gap:6 }}>
-            <p style={{ fontSize:13, color:"var(--text-3)" }}>u/あなた として新しいスレッドを開始</p>
+            <p style={{ fontSize:13, color:"var(--text-3)" }}>u/{me} として新しいスレッドを開始</p>
             <span style={{ fontSize:11, fontWeight:700, color: overQuota ? STANCE.con.color : "var(--text-4)" }}>
               今月のコメント {usedComments}/{perk.comments}
             </span>
@@ -960,8 +973,8 @@ function RelatedDebates({ current, all, dispatch }) {
 
 // ─── User Page (マイページ / プロフィール) ───────────────────────
 function UserPage({ author, dispatch }) {
-  const { debates, myRep } = useContext(AppContext);
-  const rep = author === "あなた" ? myRep : repOf(author);
+  const { debates, myRep, me } = useContext(AppContext);
+  const rep = author === me ? myRep : repOf(author);
   const badge = getBadge(rep);
   const perk = perkOf(rep);
 
@@ -976,7 +989,7 @@ function UserPage({ author, dispatch }) {
   const totalLikes = likesReceived(author, debates);
   const pops = popularUsers(debates, 5).map(p => p.author);
   const isPopular = pops.includes(author);
-  const isMe = author === "あなた";
+  const isMe = author === me;
 
   const Stat = ({ label, value, color }) => (
     <div style={{ flex:1, textAlign:"center", padding:"14px 8px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
@@ -1282,7 +1295,7 @@ function DebateCard({ d, dispatch }) {
 
 // ─── New Debate Modal ─────────────────────────────────────────────
 function NewDebateModal({ dispatch }) {
-  const { debates, myRep } = useContext(AppContext);
+  const { debates, myRep, me } = useContext(AppContext);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [topicId, setTopicId] = useState("t1");
@@ -1292,7 +1305,7 @@ function NewDebateModal({ dispatch }) {
   const [thumbnail, setThumbnail] = useState(null);
 
   const perk = perkOf(myRep);
-  const usedPosts = myUsage(debates).posts;
+  const usedPosts = myUsage(debates, me).posts;
   const overQuota = usedPosts >= perk.debates;
 
   // 過去に使われた全ハッシュタグ（候補用）
@@ -1329,7 +1342,7 @@ function NewDebateModal({ dispatch }) {
       id:Date.now(), topicId, title:title.trim(), description:desc.trim(),
       pro:0, con:0, status:"active",
       deadline: Date.now() + duration*24*3600*1000,
-      commentCount:0, createdAt:new Date(), author:"あなた", saved:false, userStance:null,
+      commentCount:0, createdAt:new Date(), author:me, saved:false, userStance:null,
       tags, thumbnail,
       history: [{ t:0, pro:0, con:0, hour:0 }],
       aiSummary: null,
@@ -1623,6 +1636,7 @@ const btnPrimary = { background:STANCE.pro.color, color:"#fff", border:"none", b
 const btnGhost = { background:"none", border:"1.5px solid var(--border)", borderRadius:99, padding:"9px 22px", fontSize:14, fontWeight:700, cursor:"pointer", color:"var(--text-2)", fontFamily:"inherit" };
 const cActBtn = { background:"none", border:"none", cursor:"pointer", fontSize:12, color:"var(--text-4)", fontWeight:600, padding:"3px 7px", borderRadius:6, fontFamily:"inherit" };
 const labelStyle = { display:"block", fontSize:13, fontWeight:600, color:"var(--text-2)", marginBottom:6 };
+const menuItem = { display:"flex", alignItems:"center", gap:8, width:"100%", textAlign:"left", padding:"8px 12px", background:"none", border:"none", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600, color:"var(--text-2)", fontFamily:"inherit" };
 const inputStyle = { width:"100%", padding:"9px 12px", border:"1px solid var(--border)", borderRadius:8, fontSize:14, fontFamily:"inherit", outline:"none", background:"var(--surface-2)", color:"var(--text)" };
 
 // ─── Hero（初見向け説明バナー） ───────────────────────────────────
@@ -1733,6 +1747,85 @@ function AdminGateModal({ onSubmit, onClose }) {
   );
 }
 
+// ─── ログイン / 新規登録モーダル ──────────────────────────────────
+function AuthModal({ onClose, notify }) {
+  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const isSignup = mode === "signup";
+
+  const submit = async () => {
+    setErr("");
+    if (!email.trim() || !password) { setErr("メールとパスワードを入力してください"); return; }
+    if (isSignup && !username.trim()) { setErr("ユーザー名を入力してください"); return; }
+    setBusy(true);
+    try {
+      if (isSignup) {
+        const { data, error } = await signUp(email.trim(), password, username.trim());
+        if (error) { setErr(error.message); return; }
+        if (data?.session) { notify("アカウントを作成しました"); onClose(); }
+        else { notify("確認メールを送信しました"); setErr("メールを確認してログインしてください。"); setMode("login"); }
+      } else {
+        const { error } = await signIn(email.trim(), password);
+        if (error) { setErr(error.message); return; }
+        notify("ログインしました"); onClose();
+      }
+    } catch (e) {
+      setErr(e?.message || "エラーが発生しました");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:350, padding:16 }}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:400, padding:28, display:"flex", flexDirection:"column", gap:14 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ width:30, height:30, borderRadius:8, overflow:"hidden", display:"flex", flexShrink:0 }}>
+            <div style={{ flex:1, background:STANCE.pro.bar }} /><div style={{ flex:1, background:STANCE.con.bar }} />
+          </div>
+          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>{isSignup ? "新規登録" : "ログイン"}</h3>
+          <button onClick={onClose} title="閉じる" aria-label="閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
+        </div>
+        {isSignup && (
+          <div>
+            <label style={labelStyle}>ユーザー名</label>
+            <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="例: hiro" autoComplete="username"
+              aria-label="ユーザー名" style={inputStyle} />
+          </div>
+        )}
+        <div>
+          <label style={labelStyle}>メールアドレス</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"
+            autoComplete="email" aria-label="メールアドレス" style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>パスワード</label>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
+            onKeyDown={e=>{ if (e.key === "Enter") submit(); }}
+            placeholder="6文字以上" autoComplete={isSignup ? "new-password" : "current-password"} aria-label="パスワード" style={inputStyle} />
+        </div>
+        {err && <p style={{ fontSize:12, color:STANCE.con.color, fontWeight:600 }}>{err}</p>}
+        <button onClick={submit} disabled={busy} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
+          {busy ? "処理中…" : isSignup ? "登録する" : "ログイン"}
+        </button>
+        <p style={{ fontSize:12.5, color:"var(--text-3)", textAlign:"center" }}>
+          {isSignup ? "すでにアカウントをお持ちですか？ " : "アカウントが未登録の方は "}
+          <button onClick={()=>{ setMode(isSignup ? "login" : "signup"); setErr(""); }}
+            style={{ background:"none", border:"none", cursor:"pointer", color:STANCE.pro.color, fontWeight:700, fontSize:12.5, fontFamily:"inherit", padding:0 }}>
+            {isSignup ? "ログイン" : "新規登録"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── App ──────────────────────────────────────────────────────────
 // 画面幅でモバイル判定するフック
 function useIsMobile(breakpoint = 820) {
@@ -1757,6 +1850,18 @@ export default function App() {
   // 常に最新の state を参照できるよう ref に保持 (LIKE の +/- 判定などに使用)
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  // ── 認証状態（メール＋パスワード / DBモードのみ） ──────────────
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // ローカルモード(DB未接続)では常にゲスト「あなた」として操作可能
+  const isAuthed = isSupabaseConfigured ? !!session : true;
+  const me = isSupabaseConfigured ? (profile?.username ?? null) : "あなた";
+  const isAdminUser = isSupabaseConfigured ? !!profile?.is_admin : false;
+  const authRef = useRef({});
+  authRef.current = { isAuthed, open: () => setAuthOpen(true) };
 
   // ── トースト通知 ────────────────────────────────────────────
   const [toast, setToast] = useState(null);
@@ -1786,6 +1891,12 @@ export default function App() {
 
   // DB 書き込みをミラーリングする dispatch ラッパー
   const dispatch = useCallback((action) => {
+    // 投稿系アクションはログイン必須（未ログインなら認証モーダルを開く）
+    if (NEEDS_AUTH.has(action.type) && !authRef.current.isAuthed) {
+      authRef.current.open();
+      notify("ログインが必要です", "con");
+      return;
+    }
     if (isSupabaseConfigured) {
       let toSync = action;
       if (action.type === "LIKE") {
@@ -1800,7 +1911,7 @@ export default function App() {
     }
     feedbackFor(action);
     rawDispatch(action);
-  }, [feedbackFor]);
+  }, [feedbackFor, notify]);
 
   // 起動時: Supabase 設定済みなら DB から読み込み。空ならサンプルを投入。
   const [dbStatus, setDbStatus] = useState(isSupabaseConfigured ? "loading" : "local");
@@ -1825,7 +1936,22 @@ export default function App() {
     })();
     return () => { alive = false; };
   }, []);
-  const myRep = useMemo(() => computeMyRep(debates), [debates]);
+
+  // 認証セッションの監視（DBモードのみ）
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let alive = true;
+    const applySession = async (s) => {
+      if (!alive) return;
+      setSession(s);
+      setProfile(s?.user ? await fetchProfile(s.user.id) : null);
+    };
+    getSession().then(applySession);
+    const unsub = onAuthChange(applySession);
+    return () => { alive = false; unsub(); };
+  }, []);
+
+  const myRep = useMemo(() => computeMyRep(debates, me), [debates, me]);
   // activeDebate はスナップショット参照なので、常に最新の debates から引き直す
   const liveDebate = activeDebate ? (debates.find(d => d.id === activeDebate.id) || activeDebate) : null;
 
@@ -1895,9 +2021,11 @@ export default function App() {
 
   const isLoading = dbStatus === "loading";
   const isHome = !activeAdmin && !activeUser && !liveDebate;
+  // 管理者の可否: DBモードは profiles.is_admin、ローカルはパスコード解錠
+  const adminAllowed = isSupabaseConfigured ? isAdminUser : adminUnlocked;
 
   return (
-    <AppContext.Provider value={{ dispatch, debates, myRep }}>
+    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -1969,15 +2097,44 @@ export default function App() {
               aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               style={{ background:"none", color:"var(--text-2)",
                 border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={theme === "dark" ? Sun : Moon} size={18}/></button>
-            {adminUnlocked && (
+            {adminAllowed && (
               <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
                 title="管理者ダッシュボード" aria-label="管理者ダッシュボード"
                 style={{ background: activeAdmin ? "var(--btn-active)" : "none", color: activeAdmin ? "#fff" : "var(--text-2)",
                   border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Shield} size={18}/></button>
             )}
-            <button onClick={()=>dispatch({type:"TOGGLE_NEW"})}
+            <button onClick={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))}
               style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
-            {!isMobile && <div style={{ width:34, height:34, borderRadius:50, background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, cursor:"pointer", color:"var(--text-2)" }}>あ</div>}
+            {isAuthed ? (
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <button onClick={()=>setUserMenuOpen(o=>!o)} title="アカウント" aria-label="アカウントメニュー"
+                  style={{ width:34, height:34, borderRadius:50, border:"none", cursor:"pointer", padding:0,
+                    background:`linear-gradient(135deg,${STANCE.pro.bg},${STANCE.con.bg})`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:14, color:"var(--text-2)", fontFamily:"inherit" }}>
+                  {me ? me[0].toUpperCase() : "?"}
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div onClick={()=>setUserMenuOpen(false)} style={{ position:"fixed", inset:0, zIndex:120 }} />
+                    <div style={{ position:"absolute", right:0, top:42, zIndex:121, minWidth:180, background:"var(--surface)",
+                      border:"1px solid var(--border)", borderRadius:12, boxShadow:"0 8px 28px rgba(0,0,0,.16)", padding:6 }}>
+                      <div style={{ padding:"8px 12px", borderBottom:"1px solid var(--border)", marginBottom:4 }}>
+                        <p style={{ fontSize:12, color:"var(--text-4)" }}>ログイン中</p>
+                        <p style={{ fontSize:13, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis" }}>u/{me}</p>
+                      </div>
+                      <button onClick={()=>{ setUserMenuOpen(false); dispatch({type:"SET_USER",author:me}); }}
+                        style={menuItem}><Icn icon={Sprout} size={15}/> マイページ</button>
+                      {isSupabaseConfigured && (
+                        <button onClick={async()=>{ setUserMenuOpen(false); await signOut(); notify("ログアウトしました"); }}
+                          style={{ ...menuItem, color:STANCE.con.color }}><Icn icon={X} size={15}/> ログアウト</button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button onClick={()=>setAuthOpen(true)}
+                style={{ ...btnGhost, padding: isMobile ? "8px 14px" : "9px 18px", flexShrink:0 }}>ログイン</button>
+            )}
           </div>
         </div>
       </header>
@@ -2028,8 +2185,8 @@ export default function App() {
               </>
             )}
             <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid var(--surface-3)", fontSize:10, color:"var(--text-4)", lineHeight:1.7 }}>
-              <div>今月の作成: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates).posts}/{perkOf(myRep).debates === 9999 ? "∞" : perkOf(myRep).debates}</strong></div>
-              <div>今月のコメント: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates).comments}/{perkOf(myRep).comments === 9999 ? "∞" : perkOf(myRep).comments}</strong></div>
+              <div>今月の作成: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates, me).posts}/{perkOf(myRep).debates === 9999 ? "∞" : perkOf(myRep).debates}</strong></div>
+              <div>今月のコメント: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates, me).comments}/{perkOf(myRep).comments === 9999 ? "∞" : perkOf(myRep).comments}</strong></div>
             </div>
           </div>
 
@@ -2046,7 +2203,7 @@ export default function App() {
         </>)}
 
         <main style={{ flex:1, minWidth:0 }}>
-          {activeAdmin && adminUnlocked ? (
+          {activeAdmin && adminAllowed ? (
             <AdminPage debates={debates} reports={reports} bannedUsers={bannedUsers} dispatch={dispatch} />
           ) : activeUser ? (
             <UserPage author={activeUser} dispatch={dispatch} />
@@ -2162,6 +2319,7 @@ export default function App() {
       {showNew && <NewDebateModal dispatch={dispatch} />}
       {reportTarget && <ReportModal target={reportTarget} dispatch={dispatch} />}
       {adminPrompt && <AdminGateModal onSubmit={submitAdminCode} onClose={()=>{ setAdminPrompt(false); if (window.location.hash === "#admin") history.replaceState(null,"",window.location.pathname); }} />}
+      {authOpen && <AuthModal onClose={()=>setAuthOpen(false)} notify={notify} />}
       {toast && <Toast toast={toast} />}
     </div>
     </AppContext.Provider>
