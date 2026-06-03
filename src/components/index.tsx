@@ -586,7 +586,7 @@ export function UserPage({ author, dispatch }) {
   const isPopular = pops.includes(author);
   const isMe = author === me;
 
-  const Stat = ({ label, value, color }) => (
+  const Stat = ({ label, value, color }: { label: any; value: any; color?: any }) => (
     <div style={{ flex:1, textAlign:"center", padding:"14px 8px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
       <div style={{ fontSize:22, fontWeight:800, color: color || "var(--text)" }}>{value}</div>
       <div style={{ fontSize:12, color:"var(--text-3)", marginTop:2 }}>{label}</div>
@@ -905,7 +905,7 @@ export function NewDebateModal({ dispatch }) {
 
   // 過去に使われた全ハッシュタグ（候補用）
   const allTags = useMemo(() => {
-    const set = new Set();
+    const set = new Set<string>();
     debates.forEach(d => (d.tags || []).forEach(t => set.add(t)));
     return [...set];
   }, [debates]);
@@ -1117,7 +1117,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 
   // 全ユーザーを集計
   const users = useMemo(() => {
-    const map = {};
+    const map: Record<string, any> = {};
     const touch = (a) => { if (!map[a]) map[a] = { author:a, posts:0, comments:0, likes:0 }; return map[a]; };
     for (const d of debates) {
       touch(d.author).posts++;
@@ -1365,7 +1365,7 @@ export function AuthModal({ onClose, notify }) {
     setBusy(true);
     try {
       if (isSignup) {
-        const { data, error } = await signUp(email.trim(), password, username.trim());
+        const { data, error }: any = await signUp(email.trim(), password, username.trim());
         if (error) { console.error("[auth] signUp", error); setErr(jpError(error.message)); return; }
         if (data?.session) { notify("アカウントを作成しました"); onClose(); }
         else { notify("確認メールを送信しました"); setErr("登録しました。メール内のリンクで確認後にログインしてください。"); setMode("login"); }

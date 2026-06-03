@@ -55,14 +55,14 @@ export async function fetchDebates() {
   ]);
   if (dErr) { console.error("[supabase] fetchDebates", dErr); return null; }
 
-  const repliesByComment = {};
+  const repliesByComment: Record<string, any[]> = {};
   for (const r of replies || []) {
     (repliesByComment[r.comment_id] ||= []).push({
       id: r.id, author: r.author, body: r.text, stance: r.stance || "pro", score: r.score || 0, vote: 0,
     });
   }
   for (const arr of Object.values(repliesByComment)) arr.sort((a, b) => a.id - b.id);
-  const proByDebate = {}, conByDebate = {};
+  const proByDebate: Record<string, any[]> = {}, conByDebate: Record<string, any[]> = {};
   for (const c of comments || []) {
     const node = {
       id: c.id, author: c.author, body: c.text, score: c.score || 0, vote: 0,

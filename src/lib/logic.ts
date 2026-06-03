@@ -16,7 +16,7 @@ export const repOf = (author) => USER_REP[author] ?? 0;
 // ─── Likes / 人気ユーザー ─────────────────────────────────────────
 /** @param {Debate[]} debates @returns {(CommentNode | Reply)[]} */
 export const allBubbles = (debates) => {
-  const out = [];
+  const out: any[] = [];
   for (const d of debates) {
     for (const list of [d.proComments, d.conComments]) {
       for (const c of list) {
@@ -34,7 +34,7 @@ export const likesReceived = (author, debates) =>
 
 /** @param {Debate[]} debates @param {number} [limit] */
 export const popularUsers = (debates, limit = 5) => {
-  const map = {};
+  const map: Record<string, number> = {};
   for (const b of allBubbles(debates)) map[b.author] = (map[b.author] || 0) + (b.score || 0);
   return Object.entries(map)
     .sort((a, b) => b[1] - a[1])

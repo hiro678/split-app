@@ -54,12 +54,12 @@ export default function App() {
   const isAuthed = isSupabaseConfigured ? !!session : true;
   const me = isSupabaseConfigured ? (profile?.username ?? null) : "あなた";
   const isAdminUser = isSupabaseConfigured ? !!profile?.is_admin : false;
-  const authRef = useRef({});
+  const authRef = useRef<{ isAuthed: boolean; open: () => void }>({ isAuthed: false, open: () => {} });
   authRef.current = { isAuthed, open: () => setAuthOpen(true) };
 
   // ── トースト通知 ────────────────────────────────────────────
   const [toast, setToast] = useState(null);
-  const toastTimer = useRef();
+  const toastTimer = useRef<any>();
   const notify = useCallback((msg, kind = "info") => {
     setToast({ msg, kind, id: Date.now() });
     clearTimeout(toastTimer.current);
@@ -356,7 +356,7 @@ export default function App() {
             </div>
           )}
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
-          {[{id:null,name:"すべて",Icon:Globe}, ...TOPICS].map(t=>(
+          {[{id:null,name:"すべて",Icon:Globe,members:""}, ...TOPICS].map((t: any)=>(
             <button key={t.id??"all"} onClick={()=>dispatch({type:"SET_TOPIC",id:t.id})}
               style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", borderRadius:8, border:"none",
                 background:activeTopic===t.id?STANCE.pro.bg:"none", color:activeTopic===t.id?STANCE.pro.color:"var(--text-2)",
@@ -431,7 +431,7 @@ export default function App() {
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px",
                 display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                  {[["hot",Flame,"人気"],["new",Sparkles,"新着"],["closing",Clock,"締切間近"],["discussion",MessageCircle,"議論中"]].map(([s,icon,l])=>(
+                  {([["hot",Flame,"人気"],["new",Sparkles,"新着"],["closing",Clock,"締切間近"],["discussion",MessageCircle,"議論中"]] as [string, any, string][]).map(([s,icon,l])=>(
                     <button key={s} onClick={()=>dispatch({type:"SET_SORT",sort:s})}
                       style={{ padding:"6px 12px", borderRadius:99, border:"none",
                         background:sort===s?STANCE.pro.bg:"none", color:sort===s?STANCE.pro.color:"var(--text-3)",
@@ -480,7 +480,7 @@ export default function App() {
             </div>
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
               <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Splitとは</h4>
-              {[[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]].map(([icon,t,desc])=>(
+              {([[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]] as [any, string, string][]).map(([icon,t,desc])=>(
                 <div key={t} style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start" }}>
                   <Icn icon={icon} size={16} style={{ marginTop:2, color:"var(--text-3)" }}/>
                   <div><p style={{ fontSize:13, fontWeight:600, color:"var(--text)" }}>{t}</p><p style={{ fontSize:12, color:"var(--text-3)" }}>{desc}</p></div>
