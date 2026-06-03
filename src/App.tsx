@@ -182,6 +182,20 @@ export default function App() {
   // activeDebate はスナップショット参照なので、常に最新の debates から引き直す
   const liveDebate = activeDebate ? (debates.find(d => d.id === activeDebate.id) || activeDebate) : null;
 
+  // 共有リンク（#d=ID）で該当ディベートを開く（DB読込後に一度だけ）
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current) return;
+    const m = window.location.hash.match(/^#d=(\d+)/);
+    if (!m) { deepLinkDone.current = true; return; }
+    const target = debates.find(x => String(x.id) === m[1]);
+    if (target) {
+      rawDispatch({ type:"SET_ACTIVE", debate: target });
+      history.replaceState(null, "", window.location.pathname);
+      deepLinkDone.current = true;
+    }
+  }, [debates]);
+
   const visible = debates
     .filter(d => !activeTopic || d.topicId===activeTopic)
     .filter(d => !activeTag || (d.tags||[]).includes(activeTag))
@@ -253,7 +267,7 @@ export default function App() {
   const adminAllowed = isSupabaseConfigured ? isAdminUser : adminUnlocked;
 
   return (
-    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar }}>
+    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar, notify }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');

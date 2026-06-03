@@ -227,10 +227,26 @@ export function StatusBadge({ status, deadline }) {
 }
 
 // ─── Vote History Graph (SVG) ─────────────────────────────────────
-export function VoteHistoryGraph({ history }) {
-  const w = 320, h = 140, pad = { top: 10, bottom: 20, left: 8, right: 8 };
+export function VoteHistoryGraph({ history, createdAt }) {
+  const w = 320, h = 140, pad = { top: 10, bottom: 22, left: 8, right: 8 };
   const innerW = w - pad.left - pad.right;
   const innerH = h - pad.top - pad.bottom;
+
+  // 経過時間ラベル（具体日時ではなく相対表記）
+  const spanMs = createdAt != null ? Math.max(0, Date.now() - Number(createdAt)) : 0;
+  const agoShort = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}分前`;
+    if (s < 86400) return `${Math.floor(s / 3600)}時間前`;
+    return `${Math.floor(s / 86400)}日前`;
+  };
+  const ticks = [
+    { f: 0, anchor: "start" }, { f: 1 / 3, anchor: "middle" }, { f: 2 / 3, anchor: "middle" }, { f: 1, anchor: "end" },
+  ].map(t => ({
+    x: pad.left + t.f * innerW,
+    anchor: t.anchor,
+    label: spanMs > 0 ? (t.f === 1 ? "今" : agoShort((1 - t.f) * spanMs)) : (t.f === 0 ? "投稿時" : t.f === 1 ? "現在" : ""),
+  }));
 
   const maxVal = Math.max(...history.map(p => Math.max(p.pro, p.con))) || 1;
 
@@ -255,10 +271,15 @@ export function VoteHistoryGraph({ history }) {
   return (
     <div style={{ width:"100%", overflow:"hidden" }}>
       <svg viewBox={`0 0 ${w} ${h}`} style={{ width:"100%", height:"auto", display:"block" }}>
-        {/* Grid lines */}
+        {/* Grid lines (横) */}
         {[0.25, 0.5, 0.75].map((r,i) => (
           <line key={i} x1={pad.left} x2={lastX} y1={pad.top + r*innerH} y2={pad.top + r*innerH}
             stroke="var(--surface-3)" strokeWidth="1" />
+        ))}
+        {/* Grid lines (縦・時間軸ガイド) */}
+        {ticks.map((t,i) => (
+          <line key={`v${i}`} x1={t.x} x2={t.x} y1={pad.top} y2={pad.top + innerH}
+            stroke="var(--surface-3)" strokeWidth="1" strokeDasharray="2 3" />
         ))}
 
         {/* Pro area + line */}
@@ -281,9 +302,10 @@ export function VoteHistoryGraph({ history }) {
           </>;
         })()}
 
-        {/* x-axis labels */}
-        <text x={pad.left} y={h-5} fontSize="9" fill="var(--text-4)">投稿時</text>
-        <text x={lastX-22} y={h-5} fontSize="9" fill="var(--text-4)">現在</text>
+        {/* x-axis labels（相対時間） */}
+        {ticks.map((t,i) => (
+          t.label ? <text key={`t${i}`} x={t.x} y={h-6} fontSize="9" fill="var(--text-4)" textAnchor={t.anchor as any}>{t.label}</text> : null
+        ))}
       </svg>
     </div>
   );
@@ -854,11 +876,22 @@ export function UserPage({ author, dispatch }) {
 
 // ─── Debate Detail ────────────────────────────────────────────────
 export function DebateDetail({ d, allDebates, dispatch }) {
+  const { notify } = useContext(AppContext);
   const topic = TOPICS.find(t=>t.id===d.topicId);
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
   const locked = d.status === "closed";
   const winner = locked ? (d.pro >= d.con ? "pro" : "con") : null;
+
+  const onShare = async () => {
+    const url = `${location.origin}${location.pathname}#d=${d.id}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: d.title, text: `Splitで議論中: ${d.title}`, url }); return; }
+      catch (e: any) { if (e?.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(url); notify?.("リンクをコピーしました"); }
+    catch { notify?.("コピーできませんでした", "con"); }
+  };
 
   return (
     <div>
@@ -948,7 +981,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
                 </span>
               </div>
             </div>
-            <VoteHistoryGraph history={d.history} />
+            <VoteHistoryGraph history={d.history} createdAt={d.createdAt} />
           </div>
 
           {!locked && (
@@ -963,7 +996,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
 
           <div style={{ display:"flex", gap:8, marginTop:14, flexWrap:"wrap" }}>
             <button style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={MessageCircle} size={14}/> {fmt(d.commentCount)} コメント</button>
-            <button style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Share2} size={14}/> シェア</button>
+            <button onClick={onShare} style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Share2} size={14}/> シェア</button>
             <button onClick={()=>dispatch({type:"SAVE",id:d.id})}
               style={{...cActBtn, color:d.saved?STANCE.pro.color:"inherit", display:"inline-flex", alignItems:"center", gap:5}}>
               <Icn icon={Bookmark} size={14} fill={d.saved?"currentColor":"none"}/> {d.saved?"保存済み":"保存"}
