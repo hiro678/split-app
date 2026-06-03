@@ -1,6 +1,6 @@
 // アプリ全体で使う定数・スタンス定義
 import {
-  ThumbsUp, ThumbsDown, Sprout, Sparkles, Brain, Star, Crown, Award, Leaf,
+  ThumbsUp, ThumbsDown, Medal, Award, Gem, Star, Crown, Leaf,
   Cpu, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard,
 } from "lucide-react";
 
@@ -19,13 +19,13 @@ export const TOPICS = [
 //  称号・アイコン・色を一貫して上昇させ、レベルアップ感を出す。
 //  しきい値は序盤を細かく、上位ほど広く（昇格の達成感を維持）。
 export const BADGES = [
-  { id: "newbie",      tier: 1, label: "新人",         min: 0,    color: "#94a3b8", Icon: Sprout },
-  { id: "debater",     tier: 2, label: "論客",         min: 40,   color: "#22c55e", Icon: Leaf },
-  { id: "adv_debater", tier: 3, label: "上級論客",     min: 120,  color: "#06b6d4", Icon: Sparkles },
-  { id: "expert",      tier: 4, label: "エキスパート", min: 280,  color: "#3b82f6", Icon: Brain },
-  { id: "veteran",     tier: 5, label: "ベテラン",     min: 600,  color: "#8b5cf6", Icon: Star },
-  { id: "master",      tier: 6, label: "マスター",     min: 1200, color: "#f59e0b", Icon: Award },
-  { id: "legend",      tier: 7, label: "レジェンド",   min: 2500, color: "#ef4444", Icon: Crown },
+  { id: "bronze",   tier: 1, label: "ブロンズ",   min: 0,    color: "#b45309", Icon: Medal },
+  { id: "silver",   tier: 2, label: "シルバー",   min: 40,   color: "#94a3b8", Icon: Medal },
+  { id: "gold",     tier: 3, label: "ゴールド",   min: 120,  color: "#eab308", Icon: Medal },
+  { id: "platinum", tier: 4, label: "プラチナ",   min: 280,  color: "#22d3ee", Icon: Award },
+  { id: "diamond",  tier: 5, label: "ダイヤ",     min: 600,  color: "#3b82f6", Icon: Gem },
+  { id: "master",   tier: 6, label: "マスター",   min: 1200, color: "#a855f7", Icon: Star },
+  { id: "legend",   tier: 7, label: "レジェンド", min: 2500, color: "#ef4444", Icon: Crown },
 ];
 
 // 仮想ユーザーのレピュテーション
@@ -47,13 +47,13 @@ export const USER_REP = {
 // ランク別の月間クォータ（badge.id をキーに）
 /** @type {Record<string, { debates: number, comments: number }>} */
 export const RANK_PERKS = {
-  newbie:      { debates: 2,    comments: 10 },
-  debater:     { debates: 4,    comments: 25 },
-  adv_debater: { debates: 6,    comments: 40 },
-  expert:      { debates: 10,   comments: 70 },
-  veteran:     { debates: 18,   comments: 130 },
-  master:      { debates: 35,   comments: 300 },
-  legend:      { debates: 9999, comments: 9999 },
+  bronze:   { debates: 2,    comments: 10 },
+  silver:   { debates: 4,    comments: 25 },
+  gold:     { debates: 6,    comments: 40 },
+  platinum: { debates: 10,   comments: 70 },
+  diamond:  { debates: 18,   comments: 130 },
+  master:   { debates: 35,   comments: 300 },
+  legend:   { debates: 9999, comments: 9999 },
 };
 
 // ─── 通報理由 ─────────────────────────────────────────────────────
