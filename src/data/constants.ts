@@ -1,6 +1,6 @@
 // アプリ全体で使う定数・スタンス定義
 import {
-  ThumbsUp, ThumbsDown, Medal, Award, Gem, Star, Crown, Leaf,
+  ThumbsUp, ThumbsDown, Sprout, Sparkles, Medal, Award, Gem, Star, Crown, Leaf,
   Cpu, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard,
 } from "lucide-react";
 
@@ -19,13 +19,15 @@ export const TOPICS = [
 //  称号・アイコン・色を一貫して上昇させ、レベルアップ感を出す。
 //  しきい値は序盤を細かく、上位ほど広く（昇格の達成感を維持）。
 export const BADGES = [
-  { id: "bronze",   tier: 1, label: "ブロンズ",   min: 0,    color: "#b45309", Icon: Medal },
-  { id: "silver",   tier: 2, label: "シルバー",   min: 40,   color: "#94a3b8", Icon: Medal },
-  { id: "gold",     tier: 3, label: "ゴールド",   min: 120,  color: "#eab308", Icon: Medal },
-  { id: "platinum", tier: 4, label: "プラチナ",   min: 280,  color: "#22d3ee", Icon: Award },
-  { id: "diamond",  tier: 5, label: "ダイヤ",     min: 600,  color: "#3b82f6", Icon: Gem },
-  { id: "master",   tier: 6, label: "マスター",   min: 1200, color: "#a855f7", Icon: Star },
-  { id: "legend",   tier: 7, label: "レジェンド", min: 2500, color: "#ef4444", Icon: Crown },
+  { id: "beginner", tier: 1, label: "ビギナー",   min: 0,    color: "#9ca3af", Icon: Sprout },
+  { id: "rookie",   tier: 2, label: "ルーキー",   min: 15,   color: "#22c55e", Icon: Sparkles },
+  { id: "bronze",   tier: 3, label: "ブロンズ",   min: 40,   color: "#b45309", Icon: Medal },
+  { id: "silver",   tier: 4, label: "シルバー",   min: 100,  color: "#94a3b8", Icon: Medal },
+  { id: "gold",     tier: 5, label: "ゴールド",   min: 200,  color: "#eab308", Icon: Medal },
+  { id: "platinum", tier: 6, label: "プラチナ",   min: 400,  color: "#22d3ee", Icon: Award },
+  { id: "diamond",  tier: 7, label: "ダイヤ",     min: 700,  color: "#3b82f6", Icon: Gem },
+  { id: "master",   tier: 8, label: "マスター",   min: 1300, color: "#a855f7", Icon: Star },
+  { id: "legend",   tier: 9, label: "レジェンド", min: 2500, color: "#ef4444", Icon: Crown },
 ];
 
 // 仮想ユーザーのレピュテーション
@@ -47,12 +49,14 @@ export const USER_REP = {
 // ランク別の月間クォータ（badge.id をキーに）
 /** @type {Record<string, { debates: number, comments: number }>} */
 export const RANK_PERKS = {
-  bronze:   { debates: 2,    comments: 10 },
-  silver:   { debates: 4,    comments: 25 },
-  gold:     { debates: 6,    comments: 40 },
-  platinum: { debates: 10,   comments: 70 },
-  diamond:  { debates: 18,   comments: 130 },
-  master:   { debates: 35,   comments: 300 },
+  beginner: { debates: 1,    comments: 5 },
+  rookie:   { debates: 2,    comments: 10 },
+  bronze:   { debates: 3,    comments: 20 },
+  silver:   { debates: 5,    comments: 35 },
+  gold:     { debates: 8,    comments: 60 },
+  platinum: { debates: 12,   comments: 100 },
+  diamond:  { debates: 20,   comments: 150 },
+  master:   { debates: 40,   comments: 350 },
   legend:   { debates: 9999, comments: 9999 },
 };
 
