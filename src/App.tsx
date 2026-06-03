@@ -4,7 +4,7 @@ import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates,
 import { INIT_DEBATES } from "./data/seedDebates";
 import {
   ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
-  MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Award, Medal,
+  MessageCircle, MessagesSquare, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Award, Medal,
   Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, Globe,
   ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon,
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
@@ -154,6 +154,12 @@ export default function App() {
   }, []);
 
   const myRep = useMemo(() => computeMyRep(debates, me), [debates, me]);
+  // 自分が参加中（作成 or コメント/返信した）ディベート ＝ Slackのスレッド的な一覧
+  const myDebates = useMemo(() => {
+    if (!me) return [];
+    const inIt = (c: any) => c.author === me || (c.replies || []).some((r: any) => r.author === me);
+    return debates.filter(d => d.author === me || d.proComments.some(inIt) || d.conComments.some(inIt));
+  }, [debates, me]);
   // activeDebate はスナップショット参照なので、常に最新の debates から引き直す
   const liveDebate = activeDebate ? (debates.find(d => d.id === activeDebate.id) || activeDebate) : null;
 
@@ -355,6 +361,32 @@ export default function App() {
               <button title="閉じる" onClick={()=>setDrawerOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-3)", display:"inline-flex" }}><Icn icon={X} size={20}/></button>
             </div>
           )}
+          {/* 参加中のディベート（ログイン時のみ） */}
+          {me && (
+            <div style={{ marginBottom:18 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:1, textTransform:"uppercase", marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+                <Icn icon={MessagesSquare} size={13}/> 参加中
+              </p>
+              {myDebates.length === 0 ? (
+                <p style={{ fontSize:12, color:"var(--text-4)", padding:"0 4px 4px", lineHeight:1.6 }}>まだありません。コメントすると、ここにスレッドが並びます。</p>
+              ) : (
+                myDebates.slice(0, 8).map(d => {
+                  const isActive = liveDebate?.id === d.id;
+                  return (
+                    <button key={d.id} onClick={()=>dispatch({type:"SET_ACTIVE",debate:d})}
+                      title={d.title}
+                      style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"7px 10px", borderRadius:8, border:"none",
+                        background: isActive ? STANCE.pro.bg : "none", color: isActive ? STANCE.pro.color : "var(--text-2)",
+                        cursor:"pointer", textAlign:"left", fontFamily:"inherit", marginBottom:2, transition:"background .1s" }}>
+                      <Icn icon={MessageCircle} size={14} style={{ flexShrink:0, color: isActive ? STANCE.pro.color : "var(--text-4)" }}/>
+                      <span style={{ flex:1, minWidth:0, fontSize:12.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+
           <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:1, textTransform:"uppercase", marginBottom:10 }}>トピック</p>
           {[{id:null,name:"すべて",Icon:Globe,members:""}, ...TOPICS].map((t: any)=>(
             <button key={t.id??"all"} onClick={()=>dispatch({type:"SET_TOPIC",id:t.id})}
