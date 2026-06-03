@@ -780,12 +780,11 @@ export function UserPage({ author, dispatch }) {
             {(() => {
               const selected = !myAvatar;
               return (
-                <button onClick={()=>setAvatar(null)} title="デフォルト（頭文字アイコン）"
+                <button onClick={()=>setAvatar(null)} title="デフォルト（頭文字アイコン）" aria-label="デフォルトに戻す"
                   style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"10px 6px", borderRadius:12,
                     border:`2px solid ${selected ? STANCE.pro.color : "var(--border)"}`,
                     background: selected ? STANCE.pro.bg : "var(--surface-2)", cursor:"pointer", fontFamily:"inherit" }}>
                   <div style={{ lineHeight:0 }}><Avatar id={null} size={52} fallback={author[0].toUpperCase()} /></div>
-                  <span style={{ fontSize:11, fontWeight:700, color: selected ? STANCE.pro.color : "var(--text-2)" }}>デフォルト</span>
                 </button>
               );
             })()}
@@ -794,7 +793,8 @@ export function UserPage({ author, dispatch }) {
               const selected = myAvatar === a.id;
               return (
                 <button key={a.id} disabled={!unlocked} onClick={()=> unlocked && setAvatar(a.id)}
-                  title={unlocked ? a.name : `Lv.${a.unlockTier} で解放`}
+                  title={unlocked ? undefined : `Lv.${a.unlockTier} で解放`}
+                  aria-label={unlocked ? "アイコンを選ぶ" : `Lv.${a.unlockTier} で解放`}
                   style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"10px 6px", borderRadius:12,
                     border:`2px solid ${selected ? STANCE.pro.color : "var(--border)"}`,
                     background: selected ? STANCE.pro.bg : "var(--surface-2)",
@@ -807,7 +807,6 @@ export function UserPage({ author, dispatch }) {
                       </div>
                     )}
                   </div>
-                  <span style={{ fontSize:11, fontWeight:700, color: selected ? STANCE.pro.color : "var(--text-2)" }}>{a.name}</span>
                   {!unlocked && <span style={{ fontSize:10, color:"var(--text-4)" }}>Lv.{a.unlockTier}で解放</span>}
                 </button>
               );
