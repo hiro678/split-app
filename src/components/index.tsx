@@ -1625,6 +1625,8 @@ export function AuthModal({ onClose, notify }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const isSignup = mode === "signup";
+  // ユーザー名のリアルタイム検証（入力中にその場でエラーを表示）
+  const unameErr = isSignup && username.trim() ? validateUsername(username) : null;
 
   // よくある英語エラーを日本語化
   const jpError = (msg = "") => {
@@ -1679,8 +1681,15 @@ export function AuthModal({ onClose, notify }) {
           <div>
             <label style={labelStyle}>ユーザー名</label>
             <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="例: hiro" autoComplete="username"
-              aria-label="ユーザー名" maxLength={20} style={inputStyle} />
-            <p style={{ fontSize:11, color:"var(--text-4)", marginTop:4 }}>半角英数字と _ で3〜20文字。@ハンドルとして表示されます。</p>
+              aria-label="ユーザー名" maxLength={20}
+              style={{ ...inputStyle, ...(unameErr ? { border:`1.5px solid ${STANCE.con.color}` } : {}) }} />
+            {unameErr ? (
+              <p style={{ fontSize:11, color:STANCE.con.color, fontWeight:700, marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+                <Icn icon={AlertCircle} size={12}/> {unameErr}
+              </p>
+            ) : (
+              <p style={{ fontSize:11, color:"var(--text-4)", marginTop:4 }}>半角英数字と _ で3〜20文字（日本語は使えません）。@ハンドルとして表示されます。</p>
+            )}
           </div>
         )}
         <div>
@@ -1700,7 +1709,7 @@ export function AuthModal({ onClose, notify }) {
             <Icn icon={AlertCircle} size={15} style={{ marginTop:1 }}/><span>{err}</span>
           </div>
         )}
-        <button onClick={submit} disabled={busy} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
+        <button onClick={submit} disabled={busy || !!unameErr} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
           {busy ? "処理中…" : isSignup ? "登録する" : "ログイン"}
         </button>
         <p style={{ fontSize:12.5, color:"var(--text-3)", textAlign:"center" }}>

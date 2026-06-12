@@ -37,7 +37,8 @@ export function validateUsername(name: string): string | null {
   const n = (name || "").trim();
   if (n.length < 3) return "ユーザー名は3文字以上にしてください";
   if (n.length > 20) return "ユーザー名は20文字以内にしてください";
-  if (!/^[A-Za-z0-9_]+$/.test(n)) return "半角英数字とアンダースコア( _ )のみ使えます";
+  if (/[^\x00-\x7F]/.test(n)) return "ユーザー名に日本語（全角文字）は使えません。半角英数字と _ で入力してください";
+  if (!/^[A-Za-z0-9_]+$/.test(n)) return "ユーザー名に使えるのは半角英数字と _ のみです";
   if (!/^[A-Za-z]/.test(n)) return "ユーザー名は英字で始めてください";
 
   const low = n.toLowerCase();
@@ -45,7 +46,7 @@ export function validateUsername(name: string): string | null {
 
   const norm = normalize(n);
   if (RESERVED.includes(norm)) return "そのユーザー名は使用できません";
-  if (BANNED.some(w => norm.includes(w))) return "不適切な語が含まれています";
+  if (BANNED.some(w => norm.includes(w))) return "ユーザー名に不適切な語が含まれています";
 
   return null;
 }
