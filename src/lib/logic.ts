@@ -92,6 +92,28 @@ export const pct = (pro, con) => {
   return { proP: (pro/total*100).toFixed(1), conP: (con/total*100).toFixed(1) };
 };
 
+// ─── 立場ラベルの自動サジェスト ───────────────────────────────────
+// タイトルの疑問形パターンから「賛成＝◯◯だ／反対＝◯◯ではない」を推定。
+// パターン外は「そう思う／そう思わない」の汎用ラベルにフォールバック。
+/** @param {string} title @returns {{ pro: string, con: string }} */
+export const suggestStanceLabels = (title) => {
+  const t = (title || "").trim().replace(/[？?]+$/, "");
+  const rules: [RegExp, (m: RegExpMatchArray) => { pro: string; con: string }][] = [
+    [/(妥当|適切|正当|公平|合法)か$/,        m => ({ pro: `${m[1]}だ`, con: `${m[1]}ではない` })],
+    [/(?:は|が)(必要|不可欠)か$/,            m => ({ pro: `${m[1]}だ`, con: `${m[1]}ではない` })],
+    [/(?:す|する)べきか$/,                  () => ({ pro: "すべきだ", con: "すべきではない" })],
+    [/べきか$/,                             () => ({ pro: "そうすべきだ", con: "そうすべきではない" })],
+    [/になるか$/,                           () => ({ pro: "なると思う", con: "ならないと思う" })],
+    [/できるか$/,                           () => ({ pro: "できると思う", con: "できないと思う" })],
+    [/(?:は|が)(.{1,8}の未来)か$/,          m => ({ pro: `${m[1]}だと思う`, con: `${m[1]}ではないと思う` })],
+  ];
+  for (const [re, fn] of rules) {
+    const m = t.match(re);
+    if (m) return fn(m);
+  }
+  return { pro: "そう思う", con: "そう思わない" };
+};
+
 // ─── Related debates: 同じトピックから他のディベートを抽出 ───────
 /** @param {Debate} current @param {Debate[]} all */
 export const getRelated = (current, all) => {

@@ -2,7 +2,7 @@
 import { useState, useContext, useMemo, useRef } from "react";
 import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated } from "../lib/logic";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels } from "../lib/logic";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
@@ -157,7 +157,7 @@ export function StanceBar({ pro, con, showLabels=false, height=6 }) {
   );
 }
 
-export function StancePicker({ current, onChange, size="md", disabled=false }) {
+export function StancePicker({ current, onChange, size="md", disabled=false, labels=null }) {
   const { isAuthed } = useContext(AppContext);
   const sm = size==="sm";
   return (
@@ -166,13 +166,14 @@ export function StancePicker({ current, onChange, size="md", disabled=false }) {
         const st=STANCE[s], active=current===s;
         return (
           <button key={s} onClick={e=>{e.stopPropagation();if(!disabled)onChange(s);}} disabled={disabled}
-            title={!isAuthed ? "投票にはログインが必要です" : undefined}
+            title={!isAuthed ? "投票にはログインが必要です" : (labels ? `${st.label}＝${labels[s]}` : undefined)}
             style={{ display:"flex", alignItems:"center", gap:sm?4:6,
               padding:sm?"4px 12px":"8px 20px", borderRadius:99,
               border:`1.5px solid ${active?st.border:"var(--border)"}`,
               background:active?st.bg:"var(--surface)", color:active?st.color:"var(--text-4)",
               fontWeight:700, fontSize:sm?12:14, cursor:disabled?"not-allowed":"pointer", transition:"all .15s", fontFamily:"inherit" }}>
             <Icn icon={st.Icon} size={sm?13:16}/>{st.label}
+            {labels && !sm && <span style={{ fontSize:11, fontWeight:600, opacity:0.85 }}>「{labels[s]}」</span>}
           </button>
         );
       })}
@@ -673,8 +674,11 @@ export function SplitComments({ d, dispatch }) {
             <div key={s} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px",
               background:st.bg, border:`1px solid ${st.border}`, borderRadius:10 }}>
               <Icn icon={st.Icon} size={16} style={{ color:st.color }}/>
-              <span style={{ fontWeight:700, fontSize:14, color:st.color }}>{st.label}側</span>
-              <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"var(--surface)",
+              <span style={{ fontWeight:700, fontSize:14, color:st.color, minWidth:0 }}>
+                {st.label}側
+                <span style={{ fontSize:11.5, fontWeight:600, opacity:0.85, marginLeft:5 }}>「{s==="pro" ? (d.proLabel || suggestStanceLabels(d.title).pro) : (d.conLabel || suggestStanceLabels(d.title).con)}」</span>
+              </span>
+              <span style={{ marginLeft:"auto", fontSize:12, fontWeight:700, background:"var(--surface)", flexShrink:0,
                 color:st.color, padding:"2px 8px", borderRadius:99, border:`1px solid ${st.border}` }}>
                 スレッド {cnt}件
               </span>
@@ -891,6 +895,11 @@ export function UserPage({ author, dispatch }) {
 // ─── Debate Detail ────────────────────────────────────────────────
 export function DebateDetail({ d, allDebates, dispatch }) {
   const { notify, isAuthed } = useContext(AppContext);
+  // 立場ラベル（未設定の古いデータはタイトルから推定）
+  const stanceLbl = {
+    pro: d.proLabel || suggestStanceLabels(d.title).pro,
+    con: d.conLabel || suggestStanceLabels(d.title).con,
+  };
   const topic = TOPICS.find(t=>t.id===d.topicId);
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
@@ -973,7 +982,8 @@ export function DebateDetail({ d, allDebates, dispatch }) {
                     opacity: locked && !active ? 0.6 : 1 }}>
                   <div style={{ marginBottom:6, display:"flex", justifyContent:"center" }}><Icn icon={st.Icon} size={26} style={{ color:st.color }}/></div>
                   <div style={{ fontSize:22, fontWeight:800, color:st.color }}>{fmt(count)}</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:st.color, marginBottom:2 }}>{st.label}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:st.color }}>{st.label}</div>
+                  <div style={{ fontSize:12.5, fontWeight:700, color:st.color, marginBottom:2 }}>「{stanceLbl[s]}」</div>
                   <div style={{ fontSize:12, color:st.color, opacity:0.8 }}>{p}%</div>
                 </div>
               );
@@ -1006,7 +1016,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
               <p style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:10 }}>
                 {d.userStance ? `あなたは「${STANCE[d.userStance].label}」を選択しています` : "あなたはどちら？"}
               </p>
-              <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} />
+              <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} labels={stanceLbl} />
               {!isAuthed && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>投票にはログインが必要です</p>}
               {d.userStance && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>もう一度クリックで取り消し</p>}
             </div>
@@ -1054,6 +1064,10 @@ export function DebateCard({ d, dispatch }) {
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
   const locked = d.status === "closed";
+  const stanceLbl = {
+    pro: d.proLabel || suggestStanceLabels(d.title).pro,
+    con: d.conLabel || suggestStanceLabels(d.title).con,
+  };
 
   return (
     <div onClick={()=>dispatch({type:"SET_ACTIVE",debate:d})}
@@ -1104,7 +1118,7 @@ export function DebateCard({ d, dispatch }) {
         )}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:14, flexWrap:"wrap", gap:8 }}>
           <div onClick={e=>e.stopPropagation()}>
-            <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} size="sm" disabled={locked} />
+            <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} size="sm" disabled={locked} labels={stanceLbl} />
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
             <span style={{ fontSize:12, color:"var(--text-4)", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={MessageCircle} size={13}/> {fmt(d.commentCount)}</span>
@@ -1132,6 +1146,10 @@ export function NewDebateModal({ dispatch }) {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
+  // 立場ラベル（空ならタイトルからの自動サジェストを採用）
+  const [proLabel, setProLabel] = useState("");
+  const [conLabel, setConLabel] = useState("");
+  const suggested = suggestStanceLabels(title);
 
   const perk = perkOf(myRep);
   const usedPosts = myUsage(debates, me).posts;
@@ -1173,6 +1191,7 @@ export function NewDebateModal({ dispatch }) {
       deadline: Date.now() + duration*24*3600*1000,
       commentCount:0, createdAt:new Date(), author:me, saved:false, userStance:null,
       tags, thumbnail,
+      proLabel: (proLabel.trim() || suggested.pro), conLabel: (conLabel.trim() || suggested.con),
       history: [{ t:0, pro:0, con:0, hour:0 }],
       aiSummary: null,
       proComments:[], conComments:[],
@@ -1201,6 +1220,22 @@ export function NewDebateModal({ dispatch }) {
           <label style={labelStyle}>テーマ・問い <span style={{color:STANCE.con.color}}>*</span></label>
           <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：AIは社会にとって脅威か？" style={inputStyle} maxLength={120} {...guard.bind} />
           <div style={{ fontSize:12, color:"var(--text-4)", textAlign:"right", marginTop:2 }}>{title.length}/120</div>
+        </div>
+        <div>
+          <label style={labelStyle}>立場ラベル（任意・賛成/反対が何を意味するか）</label>
+          <div style={{ display:"flex", gap:8 }}>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:11, color:STANCE.pro.color, fontWeight:700, marginBottom:3, display:"flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsUp} size={11}/> 賛成 ＝</p>
+              <input value={proLabel} onChange={e=>setProLabel(e.target.value)} placeholder={suggested.pro} maxLength={20}
+                aria-label="賛成の意味" style={{ ...inputStyle, borderColor:STANCE.pro.border }} />
+            </div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:11, color:STANCE.con.color, fontWeight:700, marginBottom:3, display:"flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsDown} size={11}/> 反対 ＝</p>
+              <input value={conLabel} onChange={e=>setConLabel(e.target.value)} placeholder={suggested.con} maxLength={20}
+                aria-label="反対の意味" style={{ ...inputStyle, borderColor:STANCE.con.border }} />
+            </div>
+          </div>
+          <p style={{ fontSize:11, color:"var(--text-4)", marginTop:4 }}>空欄ならタイトルから自動で設定されます。</p>
         </div>
         <div>
           <label style={labelStyle}>概要・背景 (任意)</label>

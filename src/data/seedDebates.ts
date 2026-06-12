@@ -19,6 +19,7 @@ export const INIT_DEBATES = [
   {
     id: 1, topicId: "t1",
     title: "AIは人間の雇用を奪うか？",
+    proLabel: "奪うと思う", conLabel: "奪わないと思う",
     description: "生成AIの急速な発展により、ホワイトカラー職を中心に多くの仕事が自動化されるリスクが議論されている。AIは経済全体の生産性を高め新たな雇用を生むのか、それとも格差を拡大させるのか。",
     pro: 1842, con: 2391, status: "active", deadline: Date.now() + 3*24*3600*1000,
     commentCount: 6, createdAt: new Date(Date.now() - 2*3600*1000),
@@ -66,6 +67,7 @@ export const INIT_DEBATES = [
   {
     id: 2, topicId: "t2",
     title: "原子力発電は脱炭素の解決策になるか？",
+    proLabel: "解決策になる", conLabel: "解決策にならない",
     description: "CO₂排出量削減の観点では有効だが、廃棄物処理・安全性・コスト・建設期間などの問題がある。再生可能エネルギーとの組み合わせも含め、原子力の役割をどう評価するか。",
     pro: 3210, con: 1897, status: "active", deadline: Date.now() + 5*24*3600*1000,
     commentCount: 4, createdAt: new Date(Date.now() - 8*3600*1000),
@@ -95,6 +97,7 @@ export const INIT_DEBATES = [
   {
     id: 3, topicId: "t3",
     title: "大学入試に学力試験は必要か？",
+    proLabel: "必要だ", conLabel: "必要ではない",
     description: "一点突破の学力試験が公平な選抜方法かどうかについての議論。多様な才能や経験を評価する選抜方法への移行を求める声と、客観的指標としての試験の必要性を訴える声が対立している。",
     pro: 987, con: 2043, status: "closed", deadline: Date.now() - 2*24*3600*1000,
     commentCount: 2, createdAt: new Date(Date.now() - 30*24*3600*1000),
@@ -115,6 +118,7 @@ export const INIT_DEBATES = [
   {
     id: 4, topicId: "t4",
     title: "仮想通貨は通貨の未来か？",
+    proLabel: "通貨の未来だ", conLabel: "通貨の未来ではない",
     description: "ビットコインをはじめとする仮想通貨は既存の金融システムを変革するポテンシャルがある一方、投機的性質・環境負荷・規制の不透明さが課題。",
     pro: 2156, con: 3012, status: "active", deadline: Date.now() + 1*24*3600*1000,
     commentCount: 2, createdAt: new Date(Date.now() - 3*24*3600*1000),
@@ -135,6 +139,7 @@ export const INIT_DEBATES = [
   {
     id: 5, topicId: "t1",
     title: "SNSへの年齢制限（16歳未満禁止）は妥当か？",
+    proLabel: "妥当だ", conLabel: "妥当ではない",
     description: "オーストラリアが実施した16歳未満のSNS利用禁止法に続き、他国でも議論が起きている。子どもの精神的健康を守る観点vs表現・情報アクセスの自由との兼ね合いをどう考えるか。",
     pro: 4320, con: 1654, status: "active", deadline: Date.now() + 7*24*3600*1000,
     commentCount: 2, createdAt: new Date(Date.now() - 5*3600*1000),
@@ -155,6 +160,7 @@ export const INIT_DEBATES = [
   {
     id: 6, topicId: "t7",
     title: "プロスポーツ選手のSNS発言は規制すべきか？",
+    proLabel: "規制すべきだ", conLabel: "規制すべきではない",
     description: "選手のSNS発言が炎上することが増えている。所属チームや競技団体が発言内容を制限すべきという声と、個人の表現の自由を尊重すべきという声が対立。",
     pro: 1234, con: 2567, status: "active", deadline: Date.now() + 4*24*3600*1000,
     commentCount: 2, createdAt: new Date(Date.now() - 12*3600*1000),

@@ -83,6 +83,7 @@ export async function fetchDebates() {
     status: d.status, deadline: d.deadline, createdAt: d.created_at, pro: d.pro, con: d.con,
     commentCount: d.comment_count, tags: d.tags || [], thumbnail: d.thumbnail || null,
     aiSummary: d.ai_summary || null, history: d.history || [], integrity: d.integrity || null,
+    proLabel: d.pro_label || null, conLabel: d.con_label || null,
     userStance: null, saved: false,
     proComments: proByDebate[d.id] || [], conComments: conByDebate[d.id] || [],
   }));
@@ -100,6 +101,7 @@ const debateRow = (d) => ({
   status: d.status, deadline: toMs(d.deadline), created_at: toMs(d.createdAt), pro: d.pro, con: d.con,
   comment_count: d.commentCount, tags: d.tags || [], thumbnail: d.thumbnail || null,
   ai_summary: d.aiSummary || null, history: d.history || [], integrity: d.integrity || null,
+  pro_label: d.proLabel || null, con_label: d.conLabel || null,
 });
 
 // ─── シード: アプリ内サンプルデータを一括投入 (空のDB初期化用) ───

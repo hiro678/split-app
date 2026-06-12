@@ -49,6 +49,10 @@ alter table replies  add column if not exists integrity jsonb;
 -- 既存テーブルに stance 列が無い場合の追加
 alter table replies add column if not exists stance text;
 
+-- 立場ラベル（賛成/反対が何を意味するか。例: 妥当だ / 妥当ではない）
+alter table debates add column if not exists pro_label text;
+alter table debates add column if not exists con_label text;
+
 create table if not exists reports (
   id         bigserial primary key,
   target     jsonb,
