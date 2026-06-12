@@ -158,6 +158,7 @@ export function StanceBar({ pro, con, showLabels=false, height=6 }) {
 }
 
 export function StancePicker({ current, onChange, size="md", disabled=false }) {
+  const { isAuthed } = useContext(AppContext);
   const sm = size==="sm";
   return (
     <div style={{ display:"flex", gap:sm?6:10, opacity: disabled?0.5:1 }}>
@@ -165,6 +166,7 @@ export function StancePicker({ current, onChange, size="md", disabled=false }) {
         const st=STANCE[s], active=current===s;
         return (
           <button key={s} onClick={e=>{e.stopPropagation();if(!disabled)onChange(s);}} disabled={disabled}
+            title={!isAuthed ? "投票にはログインが必要です" : undefined}
             style={{ display:"flex", alignItems:"center", gap:sm?4:6,
               padding:sm?"4px 12px":"8px 20px", borderRadius:99,
               border:`1.5px solid ${active?st.border:"var(--border)"}`,
@@ -368,7 +370,7 @@ const REPLY_LIMIT = 3;
 //   └─────────────┴─────────────┘
 
 export function Thread({ comment, debateId, dispatch, locked }) {
-  const { myRep, debates, me, notify } = useContext(AppContext);
+  const { myRep, debates, me, notify, isAuthed } = useContext(AppContext);
   const [replyingStance, setReplyingStance] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -431,7 +433,12 @@ export function Thread({ comment, debateId, dispatch, locked }) {
       {!locked && (
         <div style={{ display:"flex", gap:6, marginTop:12, paddingTop:10,
           borderTop:`1px dashed ${rootSt.border}`, justifyContent:"center", flexWrap:"wrap" }}>
-          {!replyingStance ? (
+          {!isAuthed ? (
+            <button onClick={()=>dispatch({ type:"ADD_REPLY" })}
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, color:"var(--text-4)", fontFamily:"inherit", padding:"2px 8px" }}>
+              返信するにはログインが必要です（クリックでログイン）
+            </button>
+          ) : !replyingStance ? (
             <>
               <span style={{ fontSize:11, color:"var(--text-4)", alignSelf:"center" }}>このスレッドに返信:</span>
               <button onClick={()=>setReplyingStance("pro")}
@@ -519,7 +526,7 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCo
 }
 
 export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) {
-  const { dispatch, me, myAvatar } = useContext(AppContext);
+  const { dispatch, me, myAvatar, isAuthed } = useContext(AppContext);
   const liked = bubble.vote === 1;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
@@ -544,7 +551,7 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
           marginLeft: isPro ? "auto" : 0, marginRight: isPro ? 0 : "auto",
           flexDirection: isPro ? "row" : "row-reverse" }}>
           <button onClick={()=>!locked && dispatch({type:"LIKE",...likeInfo})} disabled={locked}
-            title="いいね"
+            title={isAuthed ? "いいね" : "いいねにはログインが必要です"}
             style={{ display:"flex", alignItems:"center", gap:3, background: liked ? "var(--rose-bg)" : "none",
               border:`1px solid ${liked ? "#fecdd3" : "transparent"}`, borderRadius:99,
               padding:"1px 7px", cursor: locked ? "default" : "pointer", fontFamily:"inherit",
@@ -552,7 +559,8 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
             <Icn icon={Heart} size={12} fill={liked ? "currentColor" : "none"}/>{fmt(bubble.score)}
           </button>
           <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`@${bubble.author} のコメント`}})}
-            title="通報" style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"inline-flex",
+            title={isAuthed ? "通報" : "通報にはログインが必要です"}
+            style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"inline-flex",
               color:"var(--border-2)" }}><Icn icon={Flag} size={12}/></button>
         </div>
       </div>
@@ -882,7 +890,7 @@ export function UserPage({ author, dispatch }) {
 
 // ─── Debate Detail ────────────────────────────────────────────────
 export function DebateDetail({ d, allDebates, dispatch }) {
-  const { notify } = useContext(AppContext);
+  const { notify, isAuthed } = useContext(AppContext);
   const topic = TOPICS.find(t=>t.id===d.topicId);
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
@@ -999,6 +1007,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
                 {d.userStance ? `あなたは「${STANCE[d.userStance].label}」を選択しています` : "あなたはどちら？"}
               </p>
               <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} />
+              {!isAuthed && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>投票にはログインが必要です</p>}
               {d.userStance && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>もう一度クリックで取り消し</p>}
             </div>
           )}
@@ -1007,10 +1016,12 @@ export function DebateDetail({ d, allDebates, dispatch }) {
             <button style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={MessageCircle} size={14}/> {fmt(d.commentCount)} コメント</button>
             <button onClick={onShare} style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Share2} size={14}/> シェア</button>
             <button onClick={()=>dispatch({type:"SAVE",id:d.id})}
+              title={isAuthed ? undefined : "保存にはログインが必要です"}
               style={{...cActBtn, color:d.saved?STANCE.pro.color:"inherit", display:"inline-flex", alignItems:"center", gap:5}}>
               <Icn icon={Bookmark} size={14} fill={d.saved?"currentColor":"none"}/> {d.saved?"保存済み":"保存"}
             </button>
             <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}})}
+              title={isAuthed ? undefined : "通報にはログインが必要です"}
               style={{...cActBtn, display:"inline-flex", alignItems:"center", gap:5}}><Icn icon={Flag} size={14}/> 通報</button>
           </div>
         </div>
@@ -1038,6 +1049,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
 
 // ─── Debate Card ─────────────────────────────────────────────────
 export function DebateCard({ d, dispatch }) {
+  const { isAuthed } = useContext(AppContext);
   const topic = TOPICS.find(t=>t.id===d.topicId);
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
@@ -1096,9 +1108,9 @@ export function DebateCard({ d, dispatch }) {
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
             <span style={{ fontSize:12, color:"var(--text-4)", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={MessageCircle} size={13}/> {fmt(d.commentCount)}</span>
-            <button title="通報" onClick={e=>{e.stopPropagation();dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}});}}
+            <button title={isAuthed ? "通報" : "通報にはログインが必要です"} onClick={e=>{e.stopPropagation();dispatch({type:"OPEN_REPORT",target:{kind:"debate",label:`ディベート「${d.title}」`}});}}
               style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:"var(--border-2)" }}><Icn icon={Flag} size={15}/></button>
-            <button title={d.saved?"保存を解除":"保存"} onClick={e=>{e.stopPropagation();dispatch({type:"SAVE",id:d.id});}}
+            <button title={isAuthed ? (d.saved?"保存を解除":"保存") : "保存にはログインが必要です"} onClick={e=>{e.stopPropagation();dispatch({type:"SAVE",id:d.id});}}
               style={{ background:"none", border:"none", cursor:"pointer", display:"inline-flex", color:d.saved?STANCE.pro.color:"var(--border-2)" }}>
               <Icn icon={Bookmark} size={15} fill={d.saved?"currentColor":"none"}/>
             </button>

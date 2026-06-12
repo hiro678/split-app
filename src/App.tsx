@@ -346,6 +346,7 @@ export default function App() {
                   border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Shield} size={18}/></button>
             )}
             <button onClick={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))}
+              title={isAuthed ? undefined : "ディベート作成にはログインが必要です"}
               style={ isMobile ? { ...btnPrimary, padding:"9px 14px", flexShrink:0 } : btnPrimary }>{isMobile ? "＋作成" : "+ ディベート作成"}</button>
             {isAuthed ? (
               <div style={{ position:"relative", flexShrink:0 }}>

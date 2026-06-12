@@ -69,7 +69,8 @@ export const ADMIN_PASSCODE = "split-admin";
 
 // ─── ログイン必須アクション（DBモードのみ強制） ───────────────────
 export const NEEDS_AUTH = new Set([
-  "SET_STANCE", "ADD_COMMENT", "ADD_REPLY", "ADD_DEBATE", "LIKE", "SAVE", "REPORT",
+  "SET_STANCE", "ADD_COMMENT", "ADD_REPLY", "ADD_DEBATE", "LIKE", "SAVE",
+  "REPORT", "OPEN_REPORT", // 通報はモーダルを開く時点でログインを要求
 ]);
 
 export const STANCE = {
