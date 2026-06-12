@@ -7,6 +7,7 @@ import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
 import { validateUsername } from "../lib/moderation";
+import { useTypingGuard } from "../lib/integrity";
 import { AVATARS, Avatar } from "../avatars";
 
 // ─── メンション（@username） ──────────────────────────────────────
@@ -367,11 +368,12 @@ const REPLY_LIMIT = 3;
 //   └─────────────┴─────────────┘
 
 export function Thread({ comment, debateId, dispatch, locked }) {
-  const { myRep, debates, me } = useContext(AppContext);
+  const { myRep, debates, me, notify } = useContext(AppContext);
   const [replyingStance, setReplyingStance] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [expanded, setExpanded] = useState(false);
   const overQuota = myUsage(debates, me).comments >= perkOf(myRep).comments;
+  const guard = useTypingGuard(notify);
   const mentionUsers = useMemo(() => mentionableUsers(debates), [debates]);
 
   const replies = comment.replies || [];
@@ -384,8 +386,9 @@ export function Thread({ comment, debateId, dispatch, locked }) {
   const submitReply = () => {
     if (!replyText.trim() || !replyingStance || overQuota) return;
     dispatch({ type:"ADD_REPLY", debateId, commentId:comment.id, stance:comment.stance,
-      reply:{ id:Date.now(), author:me, stance:replyingStance, body:replyText.trim(), score:1, vote:1 }
+      reply:{ id:Date.now(), author:me, stance:replyingStance, body:replyText.trim(), score:1, vote:1, integrity: guard.snapshot(replyText.trim().length) }
     });
+    guard.reset();
     setReplyText(""); setReplyingStance(null);
   };
 
@@ -446,7 +449,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
               <p style={{ fontSize:11, fontWeight:700, color:STANCE[replyingStance].color, marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
                 <Icn icon={STANCE[replyingStance].Icon} size={13}/> {STANCE[replyingStance].label}として返信
               </p>
-              <MentionTextarea value={replyText} onChange={setReplyText} users={mentionUsers} rows={2}
+              <MentionTextarea value={replyText} onChange={setReplyText} users={mentionUsers} rows={2} {...guard.bind}
                 onKeyDown={(e: any) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); submitReply(); } }}
                 placeholder="あなたの意見を書く…（@でメンション / ⌘Enterで送信）"
                 style={{ width:"100%", padding:"7px 10px", border:`1px solid ${STANCE[replyingStance].border}`,
@@ -584,10 +587,11 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
 
 // ─── Comment section: 全スレッドを時系列で表示 ───────────────────
 export function SplitComments({ d, dispatch }) {
-  const { myRep, debates, me, isAuthed } = useContext(AppContext);
+  const { myRep, debates, me, isAuthed, notify } = useContext(AppContext);
   const [text, setText] = useState("");
   const [myStance, setMyStance] = useState("pro");
   const locked = d.status === "closed";
+  const guard = useTypingGuard(notify);
   const mentionUsers = useMemo(() => mentionableUsers(debates), [debates]);
   const perk = perkOf(myRep);
   const usedComments = myUsage(debates, me).comments;
@@ -602,8 +606,9 @@ export function SplitComments({ d, dispatch }) {
   const submit = () => {
     if (!text.trim() || locked || overQuota) return;
     dispatch({ type:"ADD_COMMENT", debateId:d.id, stance:myStance,
-      comment:{ id:Date.now(), author:me, stance:myStance, body:text.trim(), score:1, vote:1, replies:[] }
+      comment:{ id:Date.now(), author:me, stance:myStance, body:text.trim(), score:1, vote:1, replies:[], integrity: guard.snapshot(text.trim().length) }
     });
+    guard.reset();
     setText("");
   };
 
@@ -638,7 +643,7 @@ export function SplitComments({ d, dispatch }) {
             <span style={{ fontSize:13, fontWeight:700, color:"var(--text-2)" }}>立場を選択：</span>
             <StancePicker current={myStance} onChange={setMyStance} />
           </div>
-          <MentionTextarea value={text} onChange={setText} users={mentionUsers} rows={3}
+          <MentionTextarea value={text} onChange={setText} users={mentionUsers} rows={3} {...guard.bind}
             onKeyDown={(e: any) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); submit(); } }}
             placeholder="あなたの意見・論点を書いてください…（@でメンション / ⌘Enterで送信）"
             style={{ width:"100%", padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:14, fontFamily:"inherit", resize:"vertical", outline:"none", color:"var(--text)", background:"var(--surface)" }} />
@@ -1106,7 +1111,8 @@ export function DebateCard({ d, dispatch }) {
 
 // ─── New Debate Modal ─────────────────────────────────────────────
 export function NewDebateModal({ dispatch }) {
-  const { debates, myRep, me } = useContext(AppContext);
+  const { debates, myRep, me, notify } = useContext(AppContext);
+  const guard = useTypingGuard(notify);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [topicId, setTopicId] = useState("t1");
@@ -1157,8 +1163,10 @@ export function NewDebateModal({ dispatch }) {
       tags, thumbnail,
       history: [{ t:0, pro:0, con:0, hour:0 }],
       aiSummary: null,
-      proComments:[], conComments:[]
+      proComments:[], conComments:[],
+      integrity: guard.snapshot((title.trim() + desc.trim()).length),
     }});
+    guard.reset();
     dispatch({ type:"TOGGLE_NEW" });
   };
 
@@ -1179,12 +1187,12 @@ export function NewDebateModal({ dispatch }) {
         </div>
         <div>
           <label style={labelStyle}>テーマ・問い <span style={{color:STANCE.con.color}}>*</span></label>
-          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：AIは社会にとって脅威か？" style={inputStyle} maxLength={120} />
+          <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：AIは社会にとって脅威か？" style={inputStyle} maxLength={120} {...guard.bind} />
           <div style={{ fontSize:12, color:"var(--text-4)", textAlign:"right", marginTop:2 }}>{title.length}/120</div>
         </div>
         <div>
           <label style={labelStyle}>概要・背景 (任意)</label>
-          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={4}
+          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={4} {...guard.bind}
             placeholder="このテーマについての背景や論点を説明してください…"
             style={{ ...inputStyle, resize:"vertical" }} />
         </div>
@@ -1342,6 +1350,20 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
     return Object.values(map).sort((a,b) => b.likes - a.likes);
   }, [debates]);
 
+  // 手打ち計測（integrityを持つ投稿を集約。管理者のみ参照）
+  const handwritten = useMemo(() => {
+    const rows: any[] = [];
+    for (const d of debates) {
+      if (d.integrity) rows.push({ kind:"ディベート", author:d.author, body:d.title, integrity:d.integrity, debate:d.title });
+      for (const c of [...d.proComments, ...d.conComments]) {
+        if (c.integrity) rows.push({ kind:"コメント", author:c.author, body:c.body, integrity:c.integrity, debate:d.title });
+        for (const r of (c.replies||[])) if (r.integrity) rows.push({ kind:"返信", author:r.author, body:r.body, integrity:r.integrity, debate:d.title });
+      }
+    }
+    return rows.sort((a,b) => (a.integrity.verdict==="review"?0:1) - (b.integrity.verdict==="review"?0:1));
+  }, [debates]);
+  const reviewCount = handwritten.filter(r => r.integrity?.verdict === "review").length;
+
   const tabBtn = (id, icon, label, badge) => (
     <button onClick={()=>setTab(id)}
       style={{ padding:"8px 16px", borderRadius:99, border:"none", cursor:"pointer", fontFamily:"inherit",
@@ -1375,6 +1397,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
         {tabBtn("debates",ClipboardList,"投稿管理",0)}
         {tabBtn("reports",Flag,"通報管理",openReports)}
         {tabBtn("users",Users,"ユーザー管理",0)}
+        {tabBtn("integrity",PenLine,"手打ち",reviewCount)}
       </div>
 
       {tab==="debates" && (
@@ -1433,6 +1456,34 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
                     : { ...delBtn, background:"var(--amber-bg)", color:"#b45309", borderColor:"#fde68a" }}>
                   {banned ? "制限解除" : "利用制限"}
                 </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab==="integrity" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <p style={{ fontSize:12, color:"var(--text-3)", lineHeight:1.6 }}>
+            投稿の手打ち計測（管理者のみ表示）。<strong style={{color:STANCE.con.color}}>⚠️要確認</strong>＝貼り付け試行や不自然な速度を検出。完全な判定ではなく参考値です。
+          </p>
+          {handwritten.length===0 && <div style={{ ...card, textAlign:"center", color:"var(--text-4)" }}>計測データのある投稿はまだありません（新しい投稿から記録されます）</div>}
+          {handwritten.map((r,i) => {
+            const ng = r.integrity.verdict==="review";
+            return (
+              <div key={i} style={{ ...card, borderLeft:`3px solid ${ng?STANCE.con.color:"#16a34a"}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5, flexWrap:"wrap" }}>
+                  <span style={{ fontSize:11, fontWeight:700, color: ng?STANCE.con.color:"#16a34a", background: ng?STANCE.con.bg:"var(--green-bg)", padding:"2px 8px", borderRadius:99 }}>{ng?"⚠️ 要確認":"✅ 手打ち"}</span>
+                  <span style={{ fontSize:11, color:"var(--text-4)" }}>{r.kind}・@{r.author}・on「{String(r.debate).slice(0,18)}」</span>
+                </div>
+                <p style={{ fontSize:13, color:"var(--text-2)", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.body}</p>
+                <div style={{ display:"flex", gap:12, fontSize:11, color:"var(--text-4)", flexWrap:"wrap" }}>
+                  <span>{Math.round(r.integrity.ms/1000)}秒</span>
+                  <span>{r.integrity.cps} 文字/秒</span>
+                  <span>打鍵 {r.integrity.keys}</span>
+                  <span>文字 {r.integrity.len}</span>
+                  <span style={{ color: r.integrity.pastes>0?STANCE.con.color:"var(--text-4)", fontWeight: r.integrity.pastes>0?700:400 }}>貼付試行 {r.integrity.pastes}</span>
+                </div>
               </div>
             );
           })}

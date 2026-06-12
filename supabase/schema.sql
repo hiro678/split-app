@@ -41,6 +41,11 @@ create table if not exists replies (
   score      int default 0,
   created_at bigint
 );
+-- 手打ち計測（integrity）列。既存テーブルにも後付けで追加できる。
+alter table debates  add column if not exists integrity jsonb;
+alter table comments add column if not exists integrity jsonb;
+alter table replies  add column if not exists integrity jsonb;
+
 -- 既存テーブルに stance 列が無い場合の追加
 alter table replies add column if not exists stance text;
 

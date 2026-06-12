@@ -65,14 +65,14 @@ export async function fetchDebates() {
   const repliesByComment: Record<string, any[]> = {};
   for (const r of replies || []) {
     (repliesByComment[r.comment_id] ||= []).push({
-      id: r.id, author: r.author, body: r.text, stance: r.stance || "pro", score: r.score || 0, vote: 0,
+      id: r.id, author: r.author, body: r.text, stance: r.stance || "pro", score: r.score || 0, vote: 0, integrity: r.integrity || null,
     });
   }
   for (const arr of Object.values(repliesByComment)) arr.sort((a, b) => a.id - b.id);
   const proByDebate: Record<string, any[]> = {}, conByDebate: Record<string, any[]> = {};
   for (const c of comments || []) {
     const node = {
-      id: c.id, author: c.author, body: c.text, score: c.score || 0, vote: 0,
+      id: c.id, author: c.author, body: c.text, score: c.score || 0, vote: 0, integrity: c.integrity || null,
       replies: repliesByComment[c.id] || [],
     };
     (c.stance === "pro" ? (proByDebate[c.debate_id] ||= []) : (conByDebate[c.debate_id] ||= [])).push(node);
@@ -82,7 +82,7 @@ export async function fetchDebates() {
     id: d.id, title: d.title, description: d.description, topicId: d.topic_id, author: d.author,
     status: d.status, deadline: d.deadline, createdAt: d.created_at, pro: d.pro, con: d.con,
     commentCount: d.comment_count, tags: d.tags || [], thumbnail: d.thumbnail || null,
-    aiSummary: d.ai_summary || null, history: d.history || [],
+    aiSummary: d.ai_summary || null, history: d.history || [], integrity: d.integrity || null,
     userStance: null, saved: false,
     proComments: proByDebate[d.id] || [], conComments: conByDebate[d.id] || [],
   }));
@@ -99,7 +99,7 @@ const debateRow = (d) => ({
   id: d.id, title: d.title, description: d.description, topic_id: d.topicId, author: d.author,
   status: d.status, deadline: toMs(d.deadline), created_at: toMs(d.createdAt), pro: d.pro, con: d.con,
   comment_count: d.commentCount, tags: d.tags || [], thumbnail: d.thumbnail || null,
-  ai_summary: d.aiSummary || null, history: d.history || [],
+  ai_summary: d.aiSummary || null, history: d.history || [], integrity: d.integrity || null,
 });
 
 // ─── シード: アプリ内サンプルデータを一括投入 (空のDB初期化用) ───
@@ -138,7 +138,7 @@ export async function syncAction(action) {
         const c = action.comment;
         await supabase.from("comments").insert({
           id: c.id, debate_id: action.debateId, stance: action.stance,
-          author: c.author, text: c.body, score: c.score || 0, created_at: c.id,
+          author: c.author, text: c.body, score: c.score || 0, created_at: c.id, integrity: c.integrity || null,
         }).then(({ error }) => warn("ADD_COMMENT")(error));
         await supabase.rpc("increment_comment_count", { d_id: action.debateId }).then(({ error }) => warn("inc_cc")(error));
         break;
@@ -147,7 +147,7 @@ export async function syncAction(action) {
         const r = action.reply;
         await supabase.from("replies").insert({
           id: r.id, comment_id: action.commentId, stance: r.stance,
-          author: r.author, text: r.body, score: r.score || 0, created_at: r.id,
+          author: r.author, text: r.body, score: r.score || 0, created_at: r.id, integrity: r.integrity || null,
         }).then(({ error }) => warn("ADD_REPLY")(error));
         await supabase.rpc("increment_comment_count", { d_id: action.debateId }).then(({ error }) => warn("inc_cc")(error));
         break;
