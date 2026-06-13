@@ -1652,6 +1652,34 @@ export function Toast({ toast }) {
   );
 }
 
+// ─── レベルアップのお祝いモーダル（Duolingo風） ───────────────────
+export function LevelUpModal({ badge, onClose }) {
+  return (
+    <div onClick={onClose}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:420, padding:16 }}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"var(--surface)", borderRadius:20, width:"100%", maxWidth:340, padding:"32px 26px", textAlign:"center",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:6, animation:"split-pop-in .3s ease",
+          border:`2px solid ${badge.color}`, boxShadow:`0 18px 50px ${badge.color}55` }}>
+        <p style={{ fontSize:13, fontWeight:800, letterSpacing:2, color:badge.color, textTransform:"uppercase" }}>Level Up!</p>
+        <div style={{ position:"relative", margin:"6px 0" }}>
+          <div style={{ width:96, height:96, borderRadius:"50%", background:badge.color+"1f",
+            display:"flex", alignItems:"center", justifyContent:"center", animation:"split-badge-spin .6s ease" }}>
+            <Icn icon={badge.Icon} size={52} style={{ color:badge.color }}/>
+          </div>
+          <Icn icon={Sparkles} size={20} style={{ position:"absolute", top:-2, right:-2, color:"#f59e0b" }}/>
+          <Icn icon={Sparkles} size={14} style={{ position:"absolute", bottom:4, left:-4, color:"#f59e0b" }}/>
+        </div>
+        <p style={{ fontSize:13, color:"var(--text-3)", fontWeight:700 }}>Lv.{badge.tier} にレベルアップ！</p>
+        <p style={{ fontSize:24, fontWeight:900, color:badge.color, letterSpacing:-0.5 }}>{badge.label}</p>
+        <button onClick={onClose} style={{ ...btnPrimary, background:badge.color, width:"100%", padding:"12px", marginTop:14 }}>
+          つづける
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── 管理者パスコード入力モーダル ─────────────────────────────────
 export function AdminGateModal({ onSubmit, onClose }) {
   const [code, setCode] = useState("");

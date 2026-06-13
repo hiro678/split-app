@@ -48,6 +48,9 @@ export const USER_REP = {
 
 // ランク別の月間クォータ（badge.id をキーに）
 /** @type {Record<string, { debates: number, comments: number }>} */
+// ─── スコアの獲得ポイント（アクション別） ─────────────────────────
+export const POINTS = { debate: 30, comment: 10, reply: 10, like: 5 };
+
 export const RANK_PERKS = {
   beginner: { debates: 1,    comments: 5 },
   rookie:   { debates: 2,    comments: 10 },

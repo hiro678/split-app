@@ -10,15 +10,15 @@ import {
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
   Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound,
 } from "lucide-react";
-import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE } from "./data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer } from "./lib/logic";
+import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction } from "./lib/logic";
 import { AppContext } from "./context";
 import { AVATARS, Avatar } from "./avatars";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
 
 import { Icn } from "./ui/Icn";
 import {
-  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal
+  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal
 } from "./components";
 
 // ─── App ──────────────────────────────────────────────────────────
@@ -122,6 +122,9 @@ export default function App() {
       }
       syncAction(toSync);
     }
+    // スコア獲得アクションは +Nポップを予約（ログイン/読込時の誤発火を防ぐ）
+    const earned = pointsForAction(action.type);
+    if (earned > 0) pendingXpRef.current = earned;
     feedbackFor(action);
     rawDispatch(action);
   }, [feedbackFor, notify]);
@@ -216,6 +219,27 @@ export default function App() {
   const myBadge = getBadge(myRep);
   const nextBadge = BADGES.find(b => b.min > myRep);
 
+  // ── ゲーミフィケーション: +Nスコアのポップ & レベルアップ祝い ──
+  const [xpPop, setXpPop] = useState<{ amount: number; id: number } | null>(null);
+  const [levelUp, setLevelUp] = useState<any>(null);
+  const pendingXpRef = useRef(0);
+  const prevRepRef = useRef<number | null>(null);
+  const prevTierRef = useRef<number>(0);
+  const xpTimer = useRef<any>();
+  useEffect(() => {
+    const prev = prevRepRef.current;
+    if (prev == null) { prevRepRef.current = myRep; prevTierRef.current = myBadge.tier; return; }
+    if (myRep > prev && pendingXpRef.current > 0) {
+      setXpPop({ amount: pendingXpRef.current, id: Date.now() });
+      clearTimeout(xpTimer.current);
+      xpTimer.current = setTimeout(() => setXpPop(null), 1500);
+      if (myBadge.tier > prevTierRef.current) setLevelUp(myBadge);
+    }
+    pendingXpRef.current = 0;
+    prevRepRef.current = myRep;
+    prevTierRef.current = myBadge.tier;
+  }, [myRep, myBadge.tier]);
+
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showAllMine, setShowAllMine] = useState(false); // 参加中の「もっと見る」
@@ -299,6 +323,9 @@ export default function App() {
         textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px var(--pro-bg); outline: none; }
         @keyframes split-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
         @keyframes split-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes split-xp-pop { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.12); } 38% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; transform: translate(-50%, -6px); } 100% { opacity: 0; transform: translate(-50%, -34px); } }
+        @keyframes split-pop-in { 0% { opacity: 0; transform: scale(.8); } 60% { transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes split-badge-spin { 0% { transform: rotate(-12deg) scale(.6); opacity: 0; } 60% { transform: rotate(6deg) scale(1.15); opacity: 1; } 100% { transform: rotate(0) scale(1); opacity: 1; } }
       `}</style>
 
       <header style={{ position:"sticky", top:0, zIndex:100, background:"var(--surface)", borderBottom:"1px solid var(--border)" }}>
@@ -473,7 +500,17 @@ export default function App() {
                 </p>
               </>
             )}
-            <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid var(--surface-3)", fontSize:10, color:"var(--text-4)", lineHeight:1.7 }}>
+            <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid var(--surface-3)" }}>
+              <p style={{ fontSize:10, fontWeight:700, color:"var(--text-4)", marginBottom:6 }}>スコアの貯め方</p>
+              {[[ThumbsUp,"ディベート投稿",POINTS.debate,STANCE.pro.color],[MessageCircle,"コメント・返信",POINTS.comment,"var(--text-2)"],[Heart,"いいねされる",POINTS.like,"#e11d48"]].map(([ic,label,pt,col]:any)=>(
+                <div key={label} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:"var(--text-3)", marginBottom:4 }}>
+                  <Icn icon={ic} size={12} style={{ color:col, flexShrink:0 }}/>
+                  <span style={{ flex:1 }}>{label}</span>
+                  <span style={{ fontWeight:800, color:"#f59e0b" }}>+{pt}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:8, paddingTop:8, borderTop:"1px solid var(--surface-3)", fontSize:10, color:"var(--text-4)", lineHeight:1.7 }}>
               <div>今月の作成: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates, me).posts}/{perkOf(myRep).debates === 9999 ? "∞" : perkOf(myRep).debates}</strong></div>
               <div>今月のコメント: <strong style={{ color:"var(--text-2)" }}>{myUsage(debates, me).comments}/{perkOf(myRep).comments === 9999 ? "∞" : perkOf(myRep).comments}</strong></div>
             </div>
@@ -616,6 +653,16 @@ export default function App() {
       {adminPrompt && <AdminGateModal onSubmit={submitAdminCode} onClose={()=>{ setAdminPrompt(false); if (window.location.hash === "#admin") history.replaceState(null,"",window.location.pathname); }} />}
       {authOpen && <AuthModal onClose={()=>setAuthOpen(false)} notify={notify} />}
       {toast && <Toast toast={toast} />}
+      {xpPop && (
+        <div key={xpPop.id} aria-hidden="true"
+          style={{ position:"fixed", left:"50%", bottom:96, zIndex:401, transform:"translateX(-50%)",
+            display:"flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#f59e0b,#f97316)",
+            color:"#fff", fontWeight:900, fontSize:18, padding:"8px 18px", borderRadius:99,
+            boxShadow:"0 8px 28px rgba(245,158,11,.45)", animation:"split-xp-pop 1.5s ease forwards", pointerEvents:"none" }}>
+          <Icn icon={Sparkles} size={18}/> +{xpPop.amount} スコア
+        </div>
+      )}
+      {levelUp && <LevelUpModal badge={levelUp} onClose={()=>setLevelUp(null)} />}
     </div>
     </AppContext.Provider>
   );

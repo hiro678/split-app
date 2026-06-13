@@ -3,7 +3,7 @@
 /** @typedef {import("../types").Debate} Debate */
 /** @typedef {import("../types").CommentNode} CommentNode */
 /** @typedef {import("../types").Reply} Reply */
-import { BADGES, USER_REP, RANK_PERKS } from "../data/constants";
+import { BADGES, USER_REP, RANK_PERKS, POINTS } from "../data/constants";
 
 /** @param {number} rep */
 export const getBadge = (rep) => {
@@ -56,7 +56,16 @@ export const computeMyRep = (debates, me) => {
   const base = USER_REP[me] ?? 0;
   const { posts, comments } = myUsage(debates, me);
   const likes = likesReceived(me, debates);
-  return base + posts * 30 + comments * 10 + likes * 5;
+  return base + posts * POINTS.debate + comments * POINTS.comment + likes * POINTS.like;
+};
+
+// アクションで得られるスコア（+Nポップ用）
+/** @param {string} type @returns {number} */
+export const pointsForAction = (type) => {
+  if (type === "ADD_DEBATE") return POINTS.debate;
+  if (type === "ADD_COMMENT") return POINTS.comment;
+  if (type === "ADD_REPLY") return POINTS.reply;
+  return 0;
 };
 
 /** @param {number} rep */
