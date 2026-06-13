@@ -327,12 +327,17 @@ export default function App() {
               return <span title="データベース接続状態" style={{ fontSize:10, background:m[2], color:m[1], padding:"1px 7px", borderRadius:99, fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Circle} size={7} fill="currentColor"/>{m[0]}</span>;
             })()}
           </div>
-          <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", display:"inline-flex", pointerEvents:"none" }}><Icn icon={Search} size={15}/></span>
-            <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
-              placeholder="ディベートを検索…" aria-label="ディベートを検索"
-              style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid var(--border)", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)" }} />
-          </div>
+          {/* 検索窓は一覧（ホーム）でのみ表示。詳細等ではフィルタ先が見えず混乱するため */}
+          {isHome ? (
+            <div style={{ position:"relative", ...(isMobile ? { order:5, flexBasis:"100%" } : { flex:1, maxWidth:520 }) }}>
+              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", display:"inline-flex", pointerEvents:"none" }}><Icn icon={Search} size={15}/></span>
+              <input value={search} onChange={e=>dispatch({type:"SET_SEARCH",q:e.target.value})}
+                placeholder="ディベートを検索…" aria-label="ディベートを検索"
+                style={{ width:"100%", padding:"8px 12px 8px 36px", border:"1px solid var(--border)", borderRadius:99, fontSize:14, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)" }} />
+            </div>
+          ) : (
+            !isMobile && <div style={{ flex:1 }} />
+          )}
           <div style={{ display:"flex", gap: isMobile ? 8 : 10, flexShrink:0, alignItems:"center", marginLeft: isMobile ? "auto" : 0 }}>
             <button onClick={toggleTheme}
               title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}

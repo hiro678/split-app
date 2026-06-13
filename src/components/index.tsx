@@ -1,6 +1,6 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo, useRef } from "react";
-import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine } from "../ui/Icn";
+import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels } from "../lib/logic";
 import { AppContext } from "../context";
@@ -612,6 +612,12 @@ export function SplitComments({ d, dispatch }) {
     ...d.conComments.map(c => ({ ...c, stance:"con" })),
   ].sort((a, b) => a.id - b.id);
 
+  // ディベート内検索（本文・ユーザー名でスレッドを絞り込み。返信も対象）
+  const [filter, setFilter] = useState("");
+  const fq = filter.trim().toLowerCase();
+  const hit = (b) => (b.body || "").toLowerCase().includes(fq) || (b.author || "").toLowerCase().includes(fq);
+  const shownThreads = fq ? allThreads.filter(c => hit(c) || (c.replies || []).some(hit)) : allThreads;
+
   const submit = () => {
     if (!text.trim() || locked || overQuota) return;
     dispatch({ type:"ADD_COMMENT", debateId:d.id, stance:myStance,
@@ -687,6 +693,23 @@ export function SplitComments({ d, dispatch }) {
         })}
       </div>
 
+      {/* ディベート内検索（コメントの絞り込み） */}
+      {allThreads.length > 0 && (
+        <div style={{ position:"relative", marginBottom:12 }}>
+          <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"var(--text-4)", display:"inline-flex", pointerEvents:"none" }}><Icn icon={Search} size={13}/></span>
+          <input value={filter} onChange={e=>setFilter(e.target.value)}
+            placeholder="このディベート内のコメントを検索（本文・ユーザー名）…" aria-label="コメントを検索"
+            style={{ width:"100%", padding:"7px 12px 7px 32px", border:"1px solid var(--border)", borderRadius:99, fontSize:13, fontFamily:"inherit", background:"var(--surface-2)", color:"var(--text)", outline:"none" }} />
+          {fq && (
+            <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:11, color:"var(--text-4)", display:"inline-flex", alignItems:"center", gap:6 }}>
+              {shownThreads.length}件
+              <button onClick={()=>setFilter("")} title="検索をクリア" aria-label="検索をクリア"
+                style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-3)", display:"inline-flex", padding:0 }}><Icn icon={X} size={13}/></button>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* 全スレッドを時系列で表示 */}
       {allThreads.length === 0 ? (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
@@ -700,8 +723,13 @@ export function SplitComments({ d, dispatch }) {
             );
           })}
         </div>
+      ) : shownThreads.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"28px 12px", color:"var(--text-4)", fontSize:13,
+          border:"1.5px dashed var(--border)", borderRadius:10, background:"var(--surface-2)" }}>
+          「{filter.trim()}」に一致するコメントはありません
+        </div>
       ) : (
-        allThreads.map(c => (
+        shownThreads.map(c => (
           <Thread key={c.id} comment={c} debateId={d.id} dispatch={dispatch} locked={locked} />
         ))
       )}
