@@ -134,14 +134,21 @@ export default function App() {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let alive = true;
+    // DBが遅い/一時停止中でも「接続中」のまま固まらないよう、10秒でフォールバック。
+    // タイムアウト時は state の初期サンプル(INIT_DEBATES)のまま閲覧可能にする。
+    const timeout = new Promise<"__timeout__">(res => setTimeout(() => res("__timeout__"), 10000));
     (async () => {
       try {
-        let rows = await fetchDebates();
+        let rows: any = await Promise.race([fetchDebates(), timeout]);
+        if (rows === "__timeout__") {
+          if (alive) { setDbStatus("error"); console.warn("[db] fetchDebates timed out — showing sample data"); }
+          return;
+        }
         if (rows === null) { if (alive) setDbStatus("error"); return; }
         if (rows.length === 0) {
           // DB が空 → アプリ内サンプルを初回シード
-          const ok = await seedDebates(INIT_DEBATES);
-          if (ok) rows = await fetchDebates();
+          const ok = await Promise.race([seedDebates(INIT_DEBATES), timeout]);
+          if (ok && ok !== "__timeout__") rows = await fetchDebates();
         }
         if (!alive) return;
         if (rows && rows.length) rawDispatch({ type:"HYDRATE", debates: rows });
