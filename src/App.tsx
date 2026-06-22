@@ -8,10 +8,10 @@ import {
   Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, Globe,
   ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon,
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
-  Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound,
+  Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, Hash,
 } from "lucide-react";
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction } from "./lib/logic";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags } from "./lib/logic";
 import { AppContext } from "./context";
 import { AVATARS, Avatar } from "./avatars";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
@@ -223,6 +223,7 @@ export default function App() {
   const totalCon = debates.reduce((s,d)=>s+d.con,0);
   const { proP:gProP, conP:gConP } = pct(totalPro, totalCon);
   const pops = popularUsers(debates, 5);
+  const popTags = useMemo(() => popularTags(debates, 12), [debates]);
   const myBadge = getBadge(myRep);
   const nextBadge = BADGES.find(b => b.min > myRep);
 
@@ -609,6 +610,29 @@ export default function App() {
                 );
               })}
             </div>
+
+            {/* 人気のタグ（ボトムアップの分類） */}
+            {popTags.length > 0 && (
+              <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
+                <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Hash} size={16}/> 人気のタグ</h4>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {popTags.map(({tag,count}) => {
+                    const on = activeTag === tag;
+                    return (
+                      <button key={tag} onClick={()=>dispatch({type:"SET_TAG",tag: on ? null : tag})}
+                        title={`${count}件のディベート`}
+                        style={{ display:"inline-flex", alignItems:"center", gap:4, borderRadius:99, padding:"3px 10px",
+                          fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                          border:`1px solid ${on ? STANCE.pro.border : "var(--border)"}`,
+                          background: on ? STANCE.pro.bg : "var(--surface-2)", color: on ? STANCE.pro.color : "var(--text-3)" }}>
+                        #{tag}<span style={{ fontSize:10, opacity:0.7, fontWeight:600 }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
               <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Splitとは</h4>
               {([[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]] as [any, string, string][]).map(([icon,t,desc])=>(

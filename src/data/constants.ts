@@ -1,7 +1,7 @@
 // アプリ全体で使う定数・スタンス定義
 import {
   ThumbsUp, ThumbsDown, Sprout, Sparkles, Medal, Award, Gem, Star, Crown, Leaf,
-  Cpu, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard,
+  Cpu, BookOpen, BarChart3, HeartPulse, Landmark, Clapperboard, Shapes,
 } from "lucide-react";
 
 // ─── Topics (芸能・スポーツ追加) ──────────────────────────────────
@@ -13,6 +13,7 @@ export const TOPICS = [
   { id: "t5", name: "医療・健康", Icon: HeartPulse, members: "55k" },
   { id: "t6", name: "政治・社会", Icon: Landmark, members: "49k" },
   { id: "t7", name: "芸能・スポーツ", Icon: Clapperboard, members: "82k" },
+  { id: "t0", name: "その他", Icon: Shapes, members: "" },
 ];
 
 // ─── ランク（Lv.1→7 の昇格ラダー）────────────────────────────────

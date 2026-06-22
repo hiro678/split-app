@@ -101,6 +101,17 @@ export const pct = (pro, con) => {
   return { proP: (pro/total*100).toFixed(1), conP: (con/total*100).toFixed(1) };
 };
 
+// ─── 人気のタグ（全ディベートのタグを頻度集計） ───────────────────
+/** @param {Debate[]} debates @param {number} [limit] @returns {{tag:string,count:number}[]} */
+export const popularTags = (debates, limit = 8) => {
+  const map: Record<string, number> = {};
+  for (const d of debates) for (const t of (d.tags || [])) if (t) map[t] = (map[t] || 0) + 1;
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([tag, count]) => ({ tag, count }));
+};
+
 // ─── 立場ラベルの自動サジェスト ───────────────────────────────────
 // タイトルの疑問形パターンから「賛成＝◯◯だ／反対＝◯◯ではない」を推定。
 // パターン外は「そう思う／そう思わない」の汎用ラベルにフォールバック。
