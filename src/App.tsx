@@ -232,7 +232,7 @@ export default function App() {
     if (myRep > prev && pendingXpRef.current > 0) {
       setXpPop({ amount: pendingXpRef.current, id: Date.now() });
       clearTimeout(xpTimer.current);
-      xpTimer.current = setTimeout(() => setXpPop(null), 1500);
+      xpTimer.current = setTimeout(() => setXpPop(null), 2600);
       if (myBadge.tier > prevTierRef.current) setLevelUp(myBadge);
     }
     pendingXpRef.current = 0;
@@ -323,7 +323,7 @@ export default function App() {
         textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px var(--pro-bg); outline: none; }
         @keyframes split-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
         @keyframes split-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-        @keyframes split-xp-pop { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.12); } 38% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; transform: translate(-50%, -6px); } 100% { opacity: 0; transform: translate(-50%, -34px); } }
+        @keyframes split-xp-pop { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.12); } 22% { transform: translate(-50%, 0) scale(1); } 82% { opacity: 1; transform: translate(-50%, -8px); } 100% { opacity: 0; transform: translate(-50%, -34px); } }
         @keyframes split-pop-in { 0% { opacity: 0; transform: scale(.8); } 60% { transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes split-badge-spin { 0% { transform: rotate(-12deg) scale(.6); opacity: 0; } 60% { transform: rotate(6deg) scale(1.15); opacity: 1; } 100% { transform: rotate(0) scale(1); opacity: 1; } }
       `}</style>
@@ -658,7 +658,7 @@ export default function App() {
           style={{ position:"fixed", left:"50%", bottom:96, zIndex:401, transform:"translateX(-50%)",
             display:"flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#f59e0b,#f97316)",
             color:"#fff", fontWeight:900, fontSize:18, padding:"8px 18px", borderRadius:99,
-            boxShadow:"0 8px 28px rgba(245,158,11,.45)", animation:"split-xp-pop 1.5s ease forwards", pointerEvents:"none" }}>
+            boxShadow:"0 8px 28px rgba(245,158,11,.45)", animation:"split-xp-pop 2.6s ease forwards", pointerEvents:"none" }}>
           <Icn icon={Sparkles} size={18}/> +{xpPop.amount} スコア
         </div>
       )}
