@@ -302,33 +302,37 @@ export default function App() {
     <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar, notify }}>
     <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Shippori+Mincho:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        /* エディトリアル（論壇・新聞風）: 明朝/セリフ見出し ＋ 紙とインクの配色 */
         :root {
-          --bg: #f8fafc; --surface: #ffffff; --surface-2: #f9fafb; --surface-3: #f3f4f6;
-          --border: #e5e7eb; --border-2: #d1d5db;
-          --text: #111827; --text-2: #374151; --text-3: #6b7280; --text-4: #9ca3af;
-          --btn-active: #111827;
-          --pro-bg: #eff6ff; --pro-light: #f0f7ff; --con-bg: #fff5f5; --con-light: #fff8f8;
-          --rose-bg: #fff1f2; --green-bg: #dcfce7; --amber-bg: #fef3c7;
-          --violet-1: #f5f3ff; --violet-2: #fdf4ff; --violet-border: #e9d5ff;
+          --font-serif: "Fraunces", "Shippori Mincho", "Hiragino Mincho ProN", "Times New Roman", serif;
+          --bg: #f4f0e7; --surface: #fcfaf4; --surface-2: #efeadf; --surface-3: #e7e0d1;
+          --border: #ddd6c6; --border-2: #c8c0ac;
+          --text: #1c1917; --text-2: #44403a; --text-3: #6c655a; --text-4: #9b9384;
+          --btn-active: #1c1917;
+          --pro-bg: #e7edf6; --pro-light: #eef2f9; --con-bg: #f6e9e7; --con-light: #faf1ef;
+          --rose-bg: #f6e9e8; --green-bg: #e5ecd9; --amber-bg: #f2ead0;
+          --violet-1: #f1ead7; --violet-2: #f7f1e1; --violet-border: #ddd1b5;
         }
         :root[data-theme="dark"] {
-          --bg: #0b1120; --surface: #1a2233; --surface-2: #141c2b; --surface-3: #232c3d;
-          --border: #2c3648; --border-2: #3a4658;
-          --text: #f1f5f9; --text-2: #cbd5e1; --text-3: #94a3b8; --text-4: #748196;
-          --btn-active: #3b82f6;
-          --pro-bg: rgba(59,130,246,.20); --pro-light: rgba(59,130,246,.12);
-          --con-bg: rgba(244,63,94,.18); --con-light: rgba(244,63,94,.10);
-          --rose-bg: rgba(244,63,94,.20); --green-bg: rgba(34,197,94,.20); --amber-bg: rgba(245,158,11,.20);
-          --violet-1: rgba(124,58,237,.18); --violet-2: rgba(168,85,247,.12); --violet-border: rgba(139,92,246,.38);
+          --bg: #17140e; --surface: #211d15; --surface-2: #15120c; --surface-3: #2c271d;
+          --border: #393326; --border-2: #4d4634;
+          --text: #efe9da; --text-2: #cabfa6; --text-3: #978d78; --text-4: #6f6857;
+          --btn-active: #7c6a42;
+          --pro-bg: rgba(96,138,214,.20); --pro-light: rgba(96,138,214,.12);
+          --con-bg: rgba(205,92,82,.20); --con-light: rgba(205,92,82,.12);
+          --rose-bg: rgba(205,92,82,.20); --green-bg: rgba(120,160,80,.20); --amber-bg: rgba(196,150,70,.20);
+          --violet-1: rgba(180,150,90,.16); --violet-2: rgba(180,150,90,.10); --violet-border: rgba(160,135,80,.40);
         }
         html { color-scheme: light dark; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); transition: background .25s; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+        /* 見出しはセリフ（明朝）で論壇らしく */
+        h1, h2, h3, h4, h5, h6, .wordmark { font-family: var(--font-serif); letter-spacing: -0.01em; }
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
-        textarea:focus, input:focus, select:focus { border-color: #bfdbfe !important; box-shadow: 0 0 0 3px var(--pro-bg); outline: none; }
+        textarea:focus, input:focus, select:focus { border-color: var(--text-3) !important; box-shadow: 0 0 0 2px var(--surface-3); outline: none; }
         @keyframes split-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
         @keyframes split-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
         @keyframes split-xp-pop { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.12); } 22% { transform: translate(-50%, 0) scale(1); } 82% { opacity: 1; transform: translate(-50%, -8px); } 100% { opacity: 0; transform: translate(-50%, -34px); } }
@@ -355,7 +359,7 @@ export default function App() {
                 <span style={{ color:"#fff", fontWeight:900, fontSize:13 }}>p</span>
               </div>
             </div>
-            <span style={{ fontWeight:800, fontSize:20, letterSpacing:-0.8, color:"var(--text)" }}>Split</span>
+            <span className="wordmark" style={{ fontWeight:700, fontSize:22, letterSpacing:-0.5, color:"var(--text)" }}>Split</span>
             {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
               const m = { local:["ローカル","var(--text-3)","var(--surface-3)"], loading:["接続中","#b45309","var(--amber-bg)"], connected:["接続済み","#16a34a","var(--green-bg)"], error:["接続エラー","#dc2626","#fee2e2"] }[dbStatus];
