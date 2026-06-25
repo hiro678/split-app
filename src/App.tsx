@@ -300,12 +300,13 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar, notify }}>
-    <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
+    <div style={{ fontFamily:"var(--font-body)", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Shippori+Mincho:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
-        /* エディトリアル（論壇・新聞風）: 明朝/セリフ見出し ＋ 紙とインクの配色 */
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+        /* 個性派グロテスク見出し ＋ モダン日本語ゴシック本文（目新しさ＋可読性） */
         :root {
-          --font-serif: "Fraunces", "Shippori Mincho", "Hiragino Mincho ProN", "Times New Roman", serif;
+          --font-head: "Bricolage Grotesque", "Zen Kaku Gothic New", system-ui, sans-serif;
+          --font-body: "Zen Kaku Gothic New", system-ui, -apple-system, sans-serif;
           --bg: #f4f0e7; --surface: #fcfaf4; --surface-2: #efeadf; --surface-3: #e7e0d1;
           --border: #ddd6c6; --border-2: #c8c0ac;
           --text: #1c1917; --text-2: #44403a; --text-3: #6c655a; --text-4: #9b9384;
@@ -326,9 +327,10 @@ export default function App() {
         }
         html { color-scheme: light dark; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); transition: background .25s; }
-        /* 見出しはセリフ（明朝）で論壇らしく */
-        h1, h2, h3, h4, h5, h6, .wordmark { font-family: var(--font-serif); letter-spacing: -0.01em; }
+        body { background: var(--bg); font-family: var(--font-body); transition: background .25s; }
+        /* 見出しは個性派グロテスク（太め・引き締め）で力強く */
+        h1, h2, h3, h4, h5, h6, .wordmark { font-family: var(--font-head); letter-spacing: -0.02em; }
+        h2 { letter-spacing: -0.03em; }
         ::-webkit-scrollbar { width: 7px; }
         ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }

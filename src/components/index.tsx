@@ -971,7 +971,7 @@ export function DebateDetail({ d, allDebates, dispatch }) {
               style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontSize:12.5, fontWeight:700, color:"var(--text-2)", fontFamily:"inherit" }}>@{d.author}</button>
             <span>・ {ago(d.createdAt)}</span>
           </div>
-          <h2 style={{ fontSize:24, fontWeight:800, color:"var(--text)", lineHeight:1.3, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
+          <h2 style={{ fontSize:27, fontWeight:800, color:"var(--text)", lineHeight:1.28, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
           <p style={{ fontSize:15, color:"var(--text-2)", lineHeight:1.8, marginBottom:16 }}>{d.description}</p>
           {(d.tags || []).length > 0 && (
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:24 }}>
@@ -1120,7 +1120,7 @@ export function DebateCard({ d, dispatch }) {
           {d.userStance && <StanceBadge stance={d.userStance} />}
           {d.saved && <Icn icon={Bookmark} size={12} fill="currentColor" style={{ color:STANCE.pro.color }}/>}
         </div>
-        <h3 style={{ fontSize:17, fontWeight:700, color:"var(--text)", lineHeight:1.4, marginBottom:14, letterSpacing:-0.3 }}>{d.title}</h3>
+        <h3 style={{ fontSize:18.5, fontWeight:800, color:"var(--text)", lineHeight:1.35, marginBottom:14, letterSpacing:-0.3 }}>{d.title}</h3>
         <div style={{ display:"flex", alignItems:"center", marginBottom:10 }}>
           <div style={{ flex:1, display:"flex", alignItems:"center", gap:4 }}>
             <span style={{ fontSize:13, color:STANCE.pro.color, fontWeight:800, display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={ThumbsUp} size={13}/> {fmt(d.pro)}</span>
