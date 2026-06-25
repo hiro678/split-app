@@ -13,6 +13,7 @@ import {
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags } from "./lib/logic";
 import { AppContext } from "./context";
+import { getStreak, recordActivity, activityKindFor, todayStr, type Streak } from "./lib/retention";
 import { AVATARS, Avatar } from "./avatars";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
 
@@ -59,6 +60,12 @@ export default function App() {
   authRef.current = { isAuthed, open: () => setAuthOpen(true) };
   const sessionRef = useRef<any>(null);
   sessionRef.current = session;
+
+  // ── ストリーク（連続記録）。me/isAuthed を ref に保持し dispatch から参照 ──
+  const [streak, setStreak] = useState<Streak>({ current: 0, longest: 0, lastActive: null, freezes: 1 });
+  const meRef = useRef<{ me: string | null; isAuthed: boolean }>({ me, isAuthed });
+  meRef.current = { me, isAuthed };
+  useEffect(() => { getStreak(me, isAuthed).then(setStreak); }, [me, isAuthed]);
 
   // ── アバター（DBは profiles.avatar / ローカルは localStorage） ──
   const [localAvatar, setLocalAvatar] = useState<string | null>(() =>
@@ -125,6 +132,15 @@ export default function App() {
     // スコア獲得アクションは +Nポップを予約（ログイン/読込時の誤発火を防ぐ）
     const earned = pointsForAction(action.type);
     if (earned > 0) pendingXpRef.current = earned;
+    // 毎日の活動を記録 → ストリーク更新（継続したらお祝い）
+    const kind = activityKindFor(action.type);
+    if (kind) {
+      const { me: m, isAuthed: a } = meRef.current;
+      recordActivity(m, a, kind).then(res => {
+        setStreak(res.streak);
+        if (res.incremented && res.streak.current >= 2) notify(`🔥 ${res.streak.current}日連続！`, "pro");
+      });
+    }
     feedbackFor(action);
     rawDispatch(action);
   }, [feedbackFor, notify]);
@@ -491,8 +507,29 @@ export default function App() {
             </button>
           ))}
 
-          {/* User reputation card */}
+          {/* ストリーク（連続記録）— 毎日開く習慣づけ */}
           <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>連続記録</p>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <Icn icon={Flame} size={30} fill={streak.current>0?"#f97316":"none"} style={{ color: streak.current>0 ? "#f97316" : "var(--text-4)" }} />
+              <div>
+                <p style={{ fontSize:26, fontWeight:800, color:"var(--text)", lineHeight:1 }}>
+                  {streak.current}<span style={{ fontSize:13, fontWeight:700, color:"var(--text-3)", marginLeft:2 }}>日</span>
+                </p>
+                <p style={{ fontSize:10, color:"var(--text-4)", marginTop:3 }}>最長 {streak.longest}日{streak.freezes>0 && me ? ` ・ 防御 ${streak.freezes}` : ""}</p>
+              </div>
+            </div>
+            {!me ? (
+              <p style={{ fontSize:10, color:"var(--text-4)", marginTop:10 }}>ログインで連続記録が貯まります</p>
+            ) : streak.lastActive === todayStr() ? (
+              <p style={{ fontSize:10, color:"#16a34a", marginTop:10, fontWeight:700 }}>✓ 今日は記録済み</p>
+            ) : (
+              <p style={{ fontSize:10, color:"#f97316", marginTop:10, fontWeight:700 }}>今日はまだ。1アクションで継続！</p>
+            )}
+          </div>
+
+          {/* User reputation card */}
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>あなたのランク</p>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
               <Icn icon={myBadge.Icon} size={22} style={{ color:myBadge.color }}/>
