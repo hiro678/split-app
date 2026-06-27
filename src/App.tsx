@@ -13,7 +13,11 @@ import {
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags } from "./lib/logic";
 import { AppContext } from "./context";
-import { getStreak, recordActivity, activityKindFor, todayStr, type Streak } from "./lib/retention";
+import {
+  getStreak, getDayActivity, getBonusTotal, recordActivity, claimDailyBonus,
+  activityKindFor, todayStr, DAILY_MISSIONS, DAILY_BONUS, missionsCleared, missionsDoneCount,
+  type Streak, type DayActivity,
+} from "./lib/retention";
 import { AVATARS, Avatar } from "./avatars";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyBtn } from "./styles";
 
@@ -61,11 +65,18 @@ export default function App() {
   const sessionRef = useRef<any>(null);
   sessionRef.current = session;
 
-  // ── ストリーク（連続記録）。me/isAuthed を ref に保持し dispatch から参照 ──
+  // ── リテンション: ストリーク / デイリーミッション / ボーナスXP ──
+  //  me/isAuthed を ref に保持し dispatch（useCallback）から最新値を参照
   const [streak, setStreak] = useState<Streak>({ current: 0, longest: 0, lastActive: null, freezes: 1 });
+  const [todayAct, setTodayAct] = useState<DayActivity>({ votes: 0, comments: 0, replies: 0, debates: 0, bonus: 0 });
+  const [bonusTotal, setBonusTotal] = useState(0); // ミッション等で得た累計ボーナス（ランクに加算）
   const meRef = useRef<{ me: string | null; isAuthed: boolean }>({ me, isAuthed });
   meRef.current = { me, isAuthed };
-  useEffect(() => { getStreak(me, isAuthed).then(setStreak); }, [me, isAuthed]);
+  useEffect(() => {
+    getStreak(me, isAuthed).then(setStreak);
+    getDayActivity(me, isAuthed).then(setTodayAct);
+    getBonusTotal(me, isAuthed).then(setBonusTotal);
+  }, [me, isAuthed]);
 
   // ── アバター（DBは profiles.avatar / ローカルは localStorage） ──
   const [localAvatar, setLocalAvatar] = useState<string | null>(() =>
@@ -138,6 +149,7 @@ export default function App() {
       const { me: m, isAuthed: a } = meRef.current;
       recordActivity(m, a, kind).then(res => {
         setStreak(res.streak);
+        setTodayAct(res.today);
         if (res.incremented && res.streak.current >= 2) notify(`🔥 ${res.streak.current}日連続！`, "pro");
       });
     }
@@ -198,7 +210,9 @@ export default function App() {
     return () => { alive = false; unsub(); };
   }, []);
 
-  const myRep = useMemo(() => computeMyRep(debates, me), [debates, me]);
+  // 投稿/コメント/被いいねの内容スコア ＋ ミッション等のボーナスXP
+  const contentRep = useMemo(() => computeMyRep(debates, me), [debates, me]);
+  const myRep = contentRep + bonusTotal;
   // 自分が参加中（作成 or コメント/返信した）ディベート ＝ Slackのスレッド的な一覧
   const myDebates = useMemo(() => {
     if (!me) return [];
@@ -263,6 +277,19 @@ export default function App() {
     prevRepRef.current = myRep;
     prevTierRef.current = myBadge.tier;
   }, [myRep, myBadge.tier]);
+
+  // ── デイリーミッション全達成 → 当日ボーナスを一度だけ付与 ──
+  //  ボーナスは pendingXpRef 経由でランクに加算し、上のエフェクトが +XP ポップ/昇格を発火
+  useEffect(() => {
+    if (!me || todayAct.bonus > 0 || !missionsCleared(todayAct)) return;
+    claimDailyBonus(me, isAuthed, DAILY_BONUS).then(res => {
+      if (!res.claimed) return;
+      setTodayAct(t => ({ ...t, bonus: res.amount }));
+      pendingXpRef.current = res.amount;
+      setBonusTotal(b => b + res.amount);
+      notify(`🎯 本日のミッション達成！ +${res.amount} XP`, "pro");
+    });
+  }, [todayAct, me, isAuthed, notify]);
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -525,6 +552,35 @@ export default function App() {
               <p style={{ fontSize:10, color:"#16a34a", marginTop:10, fontWeight:700 }}>✓ 今日は記録済み</p>
             ) : (
               <p style={{ fontSize:10, color:"#f97316", marginTop:10, fontWeight:700 }}>今日はまだ。1アクションで継続！</p>
+            )}
+          </div>
+
+          {/* 今日のミッション — 毎朝開く理由 */}
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:0.5, textTransform:"uppercase" }}>今日のミッション</p>
+              <span style={{ fontSize:11, fontWeight:800, color: missionsCleared(todayAct) ? "#16a34a" : "var(--text-3)" }}>{missionsDoneCount(todayAct)}/{DAILY_MISSIONS.length}</span>
+            </div>
+            {!me ? (
+              <p style={{ fontSize:10, color:"var(--text-4)" }}>ログインで今日のミッションに挑戦</p>
+            ) : (
+              <>
+                {DAILY_MISSIONS.map(m => {
+                  const done = m.done(todayAct);
+                  return (
+                    <div key={m.id} style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, marginBottom:7, color: done ? "var(--text-4)" : "var(--text-2)" }}>
+                      <Icn icon={done ? CheckCircle2 : Circle} size={15} style={{ color: done ? "#16a34a" : "var(--text-4)" }} />
+                      <span style={{ flex:1, textDecoration: done ? "line-through" : "none" }}>{m.label}</span>
+                    </div>
+                  );
+                })}
+                <div style={{ marginTop:8, paddingTop:8, borderTop:"1px solid var(--surface-3)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:11, color:"var(--text-3)" }}>全達成ボーナス</span>
+                  {todayAct.bonus > 0
+                    ? <span style={{ fontSize:11, fontWeight:800, color:"#16a34a" }}>✓ +{DAILY_BONUS} 獲得</span>
+                    : <span style={{ fontSize:11, fontWeight:800, color:"#f59e0b" }}>+{DAILY_BONUS} XP</span>}
+                </div>
+              </>
             )}
           </div>
 

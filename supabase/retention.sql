@@ -1,6 +1,8 @@
 -- ════════════════════════════════════════════════════════════════
---  Split — リテンション機能スキーマ（#4 ストリーク / 活動ログ土台）
+--  Split — リテンション機能スキーマ
+--   #4 ストリーク / 活動ログ土台  ＋  #6 デイリーミッション
 --  Supabase ダッシュボード → SQL Editor に貼り付けて実行してください。
+--  再実行しても安全（create table if not exists / create or replace）。
 --  ※ auth.users を参照するため、ログイン（profiles）導入済み前提。
 -- ════════════════════════════════════════════════════════════════
 
@@ -12,7 +14,7 @@ create table if not exists user_activity (
   comments int  default 0,
   replies  int  default 0,
   debates  int  default 0,
-  points   int  default 0,
+  points   int  default 0,                -- ミッション等で得たボーナスXP（当日分）
   primary key (user_id, day)
 );
 
@@ -26,7 +28,7 @@ create table if not exists user_streaks (
   updated_at  timestamptz default now()
 );
 
--- ── RPC: 活動を1件記録し、ストリークを更新して返す（原子的）──────────
+-- ── RPC: 活動を1件記録し、ストリーク更新＋当日カウントを返す（原子的）──
 --  p_kind: 'vote' | 'comment' | 'reply' | 'debate'
 --  p_day : 端末ローカルの当日（朝の電車＝当日扱いにするためクライアント基準）
 create or replace function record_activity(p_kind text, p_day date)
@@ -34,6 +36,7 @@ returns json language plpgsql security definer as $$
 declare
   uid  uuid := auth.uid();
   s    user_streaks%rowtype;
+  a    user_activity%rowtype;
   diff int;
   newcur  int;
   newlong int;
@@ -52,6 +55,8 @@ begin
       comments = user_activity.comments + (p_kind = 'comment')::int,
       replies  = user_activity.replies  + (p_kind = 'reply')::int,
       debates  = user_activity.debates  + (p_kind = 'debate')::int;
+
+  select * into a from user_activity where user_id = uid and day = p_day;
 
   -- ストリーク更新
   select * into s from user_streaks where user_id = uid;
@@ -78,14 +83,57 @@ begin
       where user_id = uid;
   end if;
 
-  return json_build_object('current', newcur, 'longest', newlong,
-    'freezes', newfreez, 'incremented', inc, 'day', p_day);
+  return json_build_object(
+    'current', newcur, 'longest', newlong, 'freezes', newfreez,
+    'incremented', inc, 'day', p_day,
+    'votes', a.votes, 'comments', a.comments, 'replies', a.replies,
+    'debates', a.debates, 'bonus', a.points);
 end;
+$$;
+
+-- ── RPC: デイリーミッション全達成ボーナスを当日に一度だけ付与 ────────
+--  当日 points=0 のときだけ p_amount を加算（冪等。二重付与しない）。
+create or replace function claim_daily_bonus(p_day date, p_amount int)
+returns json language plpgsql security definer as $$
+declare
+  uid uuid := auth.uid();
+  n   int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update user_activity set points = p_amount
+    where user_id = uid and day = p_day and points = 0;
+  get diagnostics n = row_count;
+  return json_build_object('claimed', n > 0, 'amount', case when n > 0 then p_amount else 0 end);
+end;
+$$;
+
+-- ── RPC: 自分の状態を取得（RLSの read-all を跨がず本人のみ）───────────
+create or replace function my_streak()
+returns json language sql security definer as $$
+  select coalesce(
+    (select json_build_object('current', current, 'longest', longest,
+            'lastActive', last_active, 'freezes', freezes)
+       from user_streaks where user_id = auth.uid()),
+    json_build_object('current', 0, 'longest', 0, 'lastActive', null, 'freezes', 1));
+$$;
+
+create or replace function my_day(p_day date)
+returns json language sql security definer as $$
+  select coalesce(
+    (select json_build_object('votes', votes, 'comments', comments,
+            'replies', replies, 'debates', debates, 'bonus', points)
+       from user_activity where user_id = auth.uid() and day = p_day),
+    json_build_object('votes', 0, 'comments', 0, 'replies', 0, 'debates', 0, 'bonus', 0));
+$$;
+
+create or replace function my_bonus_total()
+returns int language sql security definer as $$
+  select coalesce((select sum(points) from user_activity where user_id = auth.uid()), 0)::int;
 $$;
 
 -- ── Row Level Security ────────────────────────────────────────────
 --  読み取りは全員可（週間リーグ #5 で他者の集計を読むため）。
---  書き込みは本人のみ（活動記録は基本 RPC 経由。RPCは security definer）。
+--  書き込みは本人のみ（活動記録は基本 RPC=security definer 経由）。
 alter table user_activity enable row level security;
 alter table user_streaks  enable row level security;
 
