@@ -134,6 +134,23 @@ export const suggestStanceLabels = (title) => {
   return { pro: "そう思う", con: "そう思わない" };
 };
 
+// ─── 今日の論題（デイリー1問）─────────────────────────────────────
+//  管理者指定(overrideId)があれば最優先。無ければ「勢いのある論題」上位から
+//  日付シードで決定的に1問選ぶ（その日のうちは誰が見ても同じ・リロードでも不変）。
+/** @param {Debate[]} debates @param {string} day @param {number|null} [overrideId] */
+export const pickDailyDebate = (debates, day, overrideId = null) => {
+  const open = debates.filter(d => d.status !== "closed");
+  const list = open.length ? open : debates;
+  if (!list.length) return null;
+  if (overrideId != null) { const o = list.find(d => d.id === overrideId); if (o) return o; }
+  const hot = [...list]
+    .sort((a, b) => (b.pro + b.con + b.commentCount) - (a.pro + a.con + a.commentCount))
+    .slice(0, Math.min(5, list.length));
+  let seed = 7;
+  for (const ch of String(day)) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  return hot[seed % hot.length];
+};
+
 // ─── Related debates: 同じトピックから他のディベートを抽出 ───────
 /** @param {Debate} current @param {Debate[]} all */
 export const getRelated = (current, all) => {

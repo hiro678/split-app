@@ -11,7 +11,8 @@ import {
   Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, Hash,
 } from "lucide-react";
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags } from "./lib/logic";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate } from "./lib/logic";
+import { getDailyOverride } from "./lib/daily";
 import { AppContext } from "./context";
 import {
   getStreak, getDayActivity, getBonusTotal, recordActivity, claimDailyBonus,
@@ -254,6 +255,10 @@ export default function App() {
   const { proP:gProP, conP:gConP } = pct(totalPro, totalCon);
   const pops = popularUsers(debates, 5);
   const popTags = useMemo(() => popularTags(debates, 12), [debates]);
+  // 今日の論題（管理者指定を優先、無ければ勢いのある論題から日替わり自動選出）
+  const [dailyOverride, setDailyOverride] = useState<number | null>(null);
+  useEffect(() => { getDailyOverride().then(setDailyOverride); }, []);
+  const dailyDebate = useMemo(() => pickDailyDebate(debates, todayStr(), dailyOverride), [debates, dailyOverride]);
   const myBadge = getBadge(myRep);
   const nextBadge = BADGES.find(b => b.min > myRep);
 
@@ -647,6 +652,36 @@ export default function App() {
               {!heroDismissed && !activeTag && !search && (
                 <HeroBanner onDismiss={dismissHero} />
               )}
+              {!activeTag && !search && dailyDebate && (() => {
+                const { proP, conP } = pct(dailyDebate.pro, dailyDebate.con);
+                const dateLabel = new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" });
+                return (
+                  <button onClick={()=>dispatch({type:"SET_ACTIVE",debate:dailyDebate})}
+                    style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
+                      background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:0, marginBottom:16, overflow:"hidden" }}>
+                    <div style={{ height:4, display:"flex" }}>
+                      <div style={{ width:`${proP}%`, background:STANCE.pro.bar }} />
+                      <div style={{ flex:1, background:STANCE.con.bar }} />
+                    </div>
+                    <div style={{ padding:"14px 18px 16px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:9 }}>
+                        <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11, fontWeight:800, letterSpacing:0.5,
+                          color:"#b45309", background:"var(--amber-bg)", borderRadius:99, padding:"3px 10px" }}>
+                          <Icn icon={Sparkles} size={12}/> 今日の論題
+                        </span>
+                        <span style={{ fontSize:12, color:"var(--text-4)" }}>{dateLabel}</span>
+                      </div>
+                      <h3 style={{ fontSize:21, fontWeight:800, color:"var(--text)", lineHeight:1.35, marginBottom:11, letterSpacing:-0.3 }}>{dailyDebate.title}</h3>
+                      <div style={{ display:"flex", alignItems:"center", gap:14, fontSize:12.5, color:"var(--text-3)" }}>
+                        <span style={{ color:STANCE.pro.color, fontWeight:700 }}>賛成 {proP}%</span>
+                        <span style={{ color:STANCE.con.color, fontWeight:700 }}>反対 {conP}%</span>
+                        <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={MessageCircle} size={13}/> {fmt(dailyDebate.commentCount)}</span>
+                        <span style={{ marginLeft:"auto", color:STANCE.pro.color, fontWeight:700 }}>意見を見る →</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })()}
               {activeTag && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                   <span style={{ fontSize:13, color:"var(--text-3)" }}>タグで絞り込み中:</span>

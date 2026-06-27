@@ -149,3 +149,28 @@ begin
   create policy "streaks_read"  on user_streaks for select using (true);
   create policy "streaks_write" on user_streaks for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 end $$;
+
+-- ════════════════════════════════════════════════════════════════
+--  #2 今日の論題（デイリー1問）— 管理者の手動上書き（折衷案 C）
+--   自動ピックはクライアント側（logic.pickDailyDebate）。
+--   このテーブルは「その日だけ運営が指定した1問」を保存する。
+-- ════════════════════════════════════════════════════════════════
+create table if not exists daily_debate (
+  day        date primary key,                                  -- 1日1問
+  debate_id  bigint references debates(id) on delete cascade,
+  set_by     uuid,
+  set_at     timestamptz default now()
+);
+
+alter table daily_debate enable row level security;
+do $$
+begin
+  drop policy if exists "daily_read"  on daily_debate;
+  drop policy if exists "daily_write" on daily_debate;
+  -- 読み取りは全員可（全ユーザーが同じ今日の論題を見る）
+  create policy "daily_read"  on daily_debate for select using (true);
+  -- 書き込みは管理者のみ（profiles.is_admin）
+  create policy "daily_write" on daily_debate for all
+    using (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin))
+    with check (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin));
+end $$;

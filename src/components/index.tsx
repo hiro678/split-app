@@ -1,8 +1,10 @@
 // プレゼンテーション層コンポーネント一式
-import { useState, useContext, useMemo, useRef } from "react";
+import { useState, useContext, useMemo, useRef, useEffect } from "react";
 import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels } from "../lib/logic";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels, pickDailyDebate } from "../lib/logic";
+import { getDailyOverride, setDailyOverride } from "../lib/daily";
+import { todayStr } from "../lib/retention";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
@@ -1410,6 +1412,54 @@ export function ReportModal({ target, dispatch }) {
 }
 
 // ─── Admin Page ───────────────────────────────────────────────────
+// ─── 今日の論題: 管理者の手動上書き（折衷案 C）──────────────────────
+function DailyTopicAdmin({ debates }) {
+  const [override, setOverride] = useState<number | null>(null);
+  const [sel, setSel] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
+  useEffect(() => { getDailyOverride().then(v => { setOverride(v); setSel(v != null ? String(v) : ""); }); }, []);
+  const auto = pickDailyDebate(debates, todayStr(), null);
+  const current = override != null ? debates.find(d => d.id === override) : auto;
+  const card = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:"14px 16px" };
+  const save = async (id: number | null) => {
+    setBusy(true);
+    const ok = await setDailyOverride(id);
+    setBusy(false);
+    if (ok) { setOverride(id); setSavedAt(Date.now()); }
+    else alert("保存に失敗しました（管理者権限が必要です）");
+  };
+  return (
+    <div style={{ ...card, marginBottom:18 }}>
+      <p style={{ fontSize:13, fontWeight:800, color:"var(--text)", display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+        <Icn icon={Sparkles} size={15} style={{ color:"#b45309" }}/> 今日の論題
+      </p>
+      <p style={{ fontSize:12, color:"var(--text-4)", marginBottom:10 }}>
+        未指定の日は「勢いのある論題」から自動で日替わり表示。ここで今日の1問を上書きできます。
+      </p>
+      <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:10 }}>
+        現在の今日の論題: <strong style={{ color:"var(--text)" }}>{current ? current.title : "—"}</strong>
+        <span style={{ marginLeft:6, color: override != null ? "#b45309" : "var(--text-4)" }}>（{override != null ? "手動指定" : "自動"}）</span>
+      </p>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+        <select value={sel} onChange={e=>setSel(e.target.value)} style={{ ...inputStyle, maxWidth:380, flex:1 }}>
+          <option value="">（自動に任せる）</option>
+          {debates.filter(d => d.status !== "closed").map(d => (
+            <option key={d.id} value={String(d.id)}>{d.title}</option>
+          ))}
+        </select>
+        <button disabled={busy} onClick={()=>save(sel ? Number(sel) : null)} style={{ ...btnPrimary, opacity:busy?0.6:1 }}>
+          {busy ? "保存中…" : "この1問に設定"}
+        </button>
+        {override != null && (
+          <button disabled={busy} onClick={()=>{ setSel(""); save(null); }} style={{ ...btnGhost, padding:"9px 16px" }}>自動に戻す</button>
+        )}
+        {savedAt > 0 && <span style={{ fontSize:12, color:"#16a34a", fontWeight:700 }}>✓ 保存しました</span>}
+      </div>
+    </div>
+  );
+}
+
 export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
   const [tab, setTab] = useState("debates");
   const openReports = reports.filter(r => r.status === "open").length;
@@ -1467,6 +1517,8 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
           </div>
         ))}
       </div>
+
+      <DailyTopicAdmin debates={debates} />
 
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
         {tabBtn("debates",ClipboardList,"投稿管理",0)}
