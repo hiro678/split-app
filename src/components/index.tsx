@@ -1,8 +1,8 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo, useRef, useEffect } from "react";
 import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search } from "../ui/Icn";
-import { STANCE, TOPICS, REPORT_REASONS } from "../data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels, pickDailyDebate } from "../lib/logic";
+import { STANCE, TOPICS, REPORT_REASONS, PRED_AWARD } from "../data/constants";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels, pickDailyDebate, isDecided, winnerSide } from "../lib/logic";
 import { getDailyOverride, setDailyOverride } from "../lib/daily";
 import { todayStr } from "../lib/retention";
 import { AppContext } from "../context";
@@ -923,7 +923,7 @@ export function UserPage({ author, dispatch }) {
 }
 
 // ─── Debate Detail ────────────────────────────────────────────────
-export function DebateDetail({ d, allDebates, dispatch }) {
+export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
   const { notify, isAuthed } = useContext(AppContext);
   // 立場ラベル（未設定の古いデータはタイトルから推定）
   const stanceLbl = {
@@ -933,8 +933,9 @@ export function DebateDetail({ d, allDebates, dispatch }) {
   const topic = TOPICS.find(t=>t.id===d.topicId);
   const { proP, conP } = pct(d.pro, d.con);
   const total = d.pro + d.con;
-  const locked = d.status === "closed";
-  const winner = locked ? (d.pro >= d.con ? "pro" : "con") : null;
+  const decided = isDecided(d);          // closed もしくは締切超過
+  const locked = decided;                // 決着後は投票不可
+  const winner = decided ? winnerSide(d) : null;
 
   const onShare = async () => {
     const url = `${location.origin}${location.pathname}#d=${d.id}`;
@@ -1022,6 +1023,48 @@ export function DebateDetail({ d, allDebates, dispatch }) {
 
           <StanceBar pro={d.pro} con={d.con} height={10} showLabels />
           <p style={{ fontSize:12, color:"var(--text-4)", textAlign:"center", marginTop:8 }}>計 {fmt(total)} 票</p>
+
+          {/* 結果予想（締切時点でどちらが多数派になるか。自分の投票とは独立）*/}
+          <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10, flexWrap:"wrap" }}>
+              <Icn icon={Trophy} size={15} style={{ color:"#b45309" }}/>
+              <h4 style={{ fontWeight:700, fontSize:13, color:"var(--text-2)" }}>結果予想</h4>
+              <span style={{ fontSize:11, color:"var(--text-4)" }}>締切時点で多数派になるのは？</span>
+            </div>
+            {decided ? (
+              <div>
+                <p style={{ fontSize:13, color:"var(--text-2)", marginBottom: myPred ? 9 : 0 }}>
+                  結果：<strong style={{ color:STANCE[winner].color }}>「{stanceLbl[winner]}」が多数</strong>（{winner==="pro"?proP:conP}%）
+                </p>
+                {myPred && (
+                  <div style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:800,
+                    color: myPred.correct ? "#16a34a" : STANCE.con.color }}>
+                    <Icn icon={myPred.correct ? CheckCircle2 : X} size={16}/>
+                    あなたの予想「{STANCE[myPred.side].label}が多数」は{myPred.correct ? `的中！ +${PRED_AWARD}XP` : "外れ"}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", gap:10 }}>
+                  {(["pro","con"] as const).map(s => {
+                    const sel = myPred?.side === s, st = STANCE[s];
+                    return (
+                      <button key={s} onClick={()=>onPredict?.(d.id, s)}
+                        style={{ flex:1, padding:"10px", borderRadius:10, cursor:"pointer", fontFamily:"inherit", fontWeight:800, fontSize:13,
+                          background: sel ? st.bg : "var(--surface)", color: sel ? st.color : "var(--text-3)",
+                          border:`1.5px solid ${sel ? st.border : "var(--border)"}`, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all .15s" }}>
+                        <Icn icon={st.Icon} size={15}/> {st.label}が多数
+                      </button>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize:11, color:"var(--text-4)", marginTop:8 }}>
+                  {myPred ? "予想を記録しました。締切まで変更できます。" : "自分の投票とは別に、結果を予想して的中させよう。"}
+                </p>
+              </>
+            )}
+          </div>
 
           {/* Vote history graph */}
           <div style={{ marginTop:20, padding:"16px 18px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>

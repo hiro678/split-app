@@ -151,6 +151,15 @@ export const pickDailyDebate = (debates, day, overrideId = null) => {
   return hot[seed % hot.length];
 };
 
+// ─── 勝敗・予想の判定 ────────────────────────────────────────────
+//  決着＝明示的にclosed、または締切(epoch ms)を過ぎている。
+/** @param {Debate} d @param {number} [now] */
+export const isDecided = (d, now = Date.now()) =>
+  d.status === "closed" || (typeof d.deadline === "number" && d.deadline > 0 && d.deadline < now);
+//  勝者側＝賛否の多数（同数は賛成扱い・稀）。
+/** @param {Debate} d @returns {"pro"|"con"} */
+export const winnerSide = (d) => ((d.pro || 0) >= (d.con || 0) ? "pro" : "con");
+
 // ─── Related debates: 同じトピックから他のディベートを抽出 ───────
 /** @param {Debate} current @param {Debate[]} all */
 export const getRelated = (current, all) => {

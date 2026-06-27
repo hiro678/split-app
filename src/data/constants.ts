@@ -52,6 +52,9 @@ export const USER_REP = {
 // ─── スコアの獲得ポイント（アクション別） ─────────────────────────
 export const POINTS = { debate: 30, comment: 10, reply: 10, like: 5 };
 
+// 予想的中1回あたりのボーナスXP（#1 予想バトル）
+export const PRED_AWARD = 15;
+
 export const RANK_PERKS = {
   beginner: { debates: 1,    comments: 5 },
   rookie:   { debates: 2,    comments: 10 },

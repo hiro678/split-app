@@ -10,9 +10,13 @@ import {
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
   Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, Hash,
 } from "lucide-react";
-import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS } from "./data/constants";
-import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate } from "./lib/logic";
+import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS, PRED_AWARD } from "./data/constants";
+import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate, isDecided, winnerSide } from "./lib/logic";
 import { getDailyOverride } from "./lib/daily";
+import {
+  getPredictions, setPrediction as savePrediction, resolvePending, predictionStats,
+  type PredSide, type PredRow, type PredStats,
+} from "./lib/predictions";
 import { AppContext } from "./context";
 import {
   getStreak, getDayActivity, getBonusTotal, recordActivity, claimDailyBonus,
@@ -70,13 +74,20 @@ export default function App() {
   //  me/isAuthed を ref に保持し dispatch（useCallback）から最新値を参照
   const [streak, setStreak] = useState<Streak>({ current: 0, longest: 0, lastActive: null, freezes: 1 });
   const [todayAct, setTodayAct] = useState<DayActivity>({ votes: 0, comments: 0, replies: 0, debates: 0, bonus: 0 });
-  const [bonusTotal, setBonusTotal] = useState(0); // ミッション等で得た累計ボーナス（ランクに加算）
+  const [missionBonus, setMissionBonus] = useState(0); // ミッション累計ボーナス
+  const [predStats, setPredStats] = useState<PredStats>({ predicted: 0, resolved: 0, correct: 0, rate: 0, streak: 0 });
+  const [myPreds, setMyPreds] = useState<Record<number, PredRow>>({}); // 自分の予想（debateId→行）
+  const bonusTotal = missionBonus + predStats.correct * PRED_AWARD; // ランクに加算する累計ボーナス
   const meRef = useRef<{ me: string | null; isAuthed: boolean }>({ me, isAuthed });
   meRef.current = { me, isAuthed };
   useEffect(() => {
     getStreak(me, isAuthed).then(setStreak);
     getDayActivity(me, isAuthed).then(setTodayAct);
-    getBonusTotal(me, isAuthed).then(setBonusTotal);
+    getBonusTotal(me, isAuthed).then(setMissionBonus);
+    getPredictions(me, isAuthed).then(rows => {
+      setMyPreds(Object.fromEntries(rows.map(r => [r.debateId, r])));
+      setPredStats(predictionStats(rows));
+    });
   }, [me, isAuthed]);
 
   // ── アバター（DBは profiles.avatar / ローカルは localStorage） ──
@@ -291,10 +302,46 @@ export default function App() {
       if (!res.claimed) return;
       setTodayAct(t => ({ ...t, bonus: res.amount }));
       pendingXpRef.current = res.amount;
-      setBonusTotal(b => b + res.amount);
+      setMissionBonus(b => b + res.amount);
       notify(`🎯 本日のミッション達成！ +${res.amount} XP`, "pro");
     });
   }, [todayAct, me, isAuthed, notify]);
+
+  // ── 予想バトル: 締切を過ぎた予想を判定して確定（結果を見に戻る引力）──
+  const resolveAttemptRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (!me || !debates.length) return;
+    const byId = new Map(debates.map(d => [d.id, d]));
+    const ready = Object.values(myPreds).filter(p =>
+      !p.resolved && !resolveAttemptRef.current.has(p.debateId) && (() => { const d = byId.get(p.debateId); return d && isDecided(d); })());
+    if (!ready.length) return;
+    ready.forEach(p => resolveAttemptRef.current.add(p.debateId));
+    resolvePending(me, isAuthed, debates).then(results => {
+      if (!results.length) return;
+      getPredictions(me, isAuthed).then(rows => {
+        setMyPreds(Object.fromEntries(rows.map(r => [r.debateId, r])));
+        const hits = results.filter(r => r.correct).length;
+        if (hits > 0) pendingXpRef.current += hits * PRED_AWARD;
+        setPredStats(predictionStats(rows)); // 的中数↑→bonusTotal↑→ +XPポップ発火
+      });
+      for (const r of results) {
+        notify(r.correct ? `🎯 予想的中！「${r.title}」` : `予想は外れ…「${r.title}」`, r.correct ? "pro" : "con");
+      }
+    });
+  }, [me, isAuthed, debates, myPreds, notify]);
+
+  // 予想する/変更する（決着前のみ。楽観更新＋保存）
+  const predict = useCallback((debateId: number, side: PredSide) => {
+    const { me: m, isAuthed: a } = meRef.current;
+    if (!m) { authRef.current.open(); notify("予想にはログインが必要です", "con"); return; }
+    setMyPreds(prev => {
+      const next = { ...prev, [debateId]: { debateId, side, resolved: false, correct: null, resolvedAt: null } };
+      setPredStats(predictionStats(Object.values(next)));
+      return next;
+    });
+    savePrediction(m, a, debateId, side).then(ok => { if (!ok) notify("予想を保存できませんでした", "con"); });
+    notify(`予想を記録：${side === "pro" ? "賛成が多数" : "反対が多数"}`, side);
+  }, [notify]);
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -628,6 +675,30 @@ export default function App() {
             </div>
           </div>
 
+          {/* 成績: 予想的中率 ＋ 良い議論（被いいね）の2軸 */}
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>成績</p>
+            <div style={{ display:"flex", gap:10 }}>
+              <div style={{ flex:1, textAlign:"center", padding:"8px 4px", background:"var(--surface-2)", borderRadius:10 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, fontSize:20, fontWeight:800, color:"#b45309" }}>
+                  <Icn icon={Trophy} size={15}/> {predStats.resolved ? Math.round(predStats.rate * 100) : "—"}{predStats.resolved ? "%" : ""}
+                </div>
+                <p style={{ fontSize:10, color:"var(--text-4)", marginTop:3 }}>予想的中率{predStats.resolved ? `（${predStats.correct}/${predStats.resolved}）` : ""}</p>
+              </div>
+              <div style={{ flex:1, textAlign:"center", padding:"8px 4px", background:"var(--surface-2)", borderRadius:10 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, fontSize:20, fontWeight:800, color:"#e11d48" }}>
+                  <Icn icon={Heart} size={15}/> {fmt(likesReceived(me, debates))}
+                </div>
+                <p style={{ fontSize:10, color:"var(--text-4)", marginTop:3 }}>良い議論（被いいね）</p>
+              </div>
+            </div>
+            {predStats.streak >= 2 && (
+              <p style={{ fontSize:11, color:"#16a34a", fontWeight:700, marginTop:9, display:"flex", alignItems:"center", gap:5 }}>
+                <Icn icon={Flame} size={13}/> 予想{predStats.streak}連勝中
+              </p>
+            )}
+          </div>
+
           <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
             <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", marginBottom:10, letterSpacing:0.5, textTransform:"uppercase" }}>凡例</p>
             {["pro","con"].map(s=>(
@@ -646,7 +717,7 @@ export default function App() {
           ) : activeUser ? (
             <UserPage author={activeUser} dispatch={dispatch} />
           ) : liveDebate ? (
-            <DebateDetail d={liveDebate} allDebates={debates} dispatch={dispatch} />
+            <DebateDetail d={liveDebate} allDebates={debates} dispatch={dispatch} myPred={myPreds[liveDebate.id]} onPredict={predict} />
           ) : (
             <>
               {!heroDismissed && !activeTag && !search && (

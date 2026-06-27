@@ -174,3 +174,70 @@ begin
     using (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin))
     with check (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin));
 end $$;
+
+-- ════════════════════════════════════════════════════════════════
+--  #1 予想バトル — 締切時点でどちらが多数派になるかを予想
+--   報酬は predictions 側で独立管理（的中数で算出）。user_activity と非干渉。
+-- ════════════════════════════════════════════════════════════════
+create table if not exists predictions (
+  user_id     uuid   not null references auth.users(id) on delete cascade,
+  debate_id   bigint not null references debates(id) on delete cascade,
+  side        text   not null check (side in ('pro','con')),
+  resolved    boolean default false,
+  correct     boolean,
+  created_at  timestamptz default now(),
+  resolved_at timestamptz,
+  primary key (user_id, debate_id)
+);
+
+alter table predictions enable row level security;
+do $$
+begin
+  drop policy if exists "pred_rw" on predictions;
+  -- 自分の予想のみ読み書き可
+  create policy "pred_rw" on predictions for all
+    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+end $$;
+
+-- ── RPC: 予想する/変更する（決着後は変更不可）────────────────────
+create or replace function set_prediction(p_debate_id bigint, p_side text)
+returns json language plpgsql security definer as $$
+declare uid uuid := auth.uid(); r predictions%rowtype;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if p_side not in ('pro','con') then raise exception 'bad side'; end if;
+  select * into r from predictions where user_id = uid and debate_id = p_debate_id;
+  if found and r.resolved then return json_build_object('ok', false, 'reason', 'resolved'); end if;
+  insert into predictions (user_id, debate_id, side) values (uid, p_debate_id, p_side)
+    on conflict (user_id, debate_id) do update set side = excluded.side
+    where not predictions.resolved;
+  return json_build_object('ok', true, 'side', p_side);
+end;
+$$;
+
+-- ── RPC: 予想を確定（勝者はサーバ側で debates から算出＝改ざん不可）──
+create or replace function resolve_prediction(p_debate_id bigint)
+returns json language plpgsql security definer as $$
+declare
+  uid uuid := auth.uid();
+  r predictions%rowtype;
+  d debates%rowtype;
+  winner text;
+  ok boolean;
+  decided boolean;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select * into r from predictions where user_id = uid and debate_id = p_debate_id;
+  if not found or r.resolved then return json_build_object('resolved', false); end if;
+  select * into d from debates where id = p_debate_id;
+  if not found then return json_build_object('resolved', false); end if;
+  decided := (d.status = 'closed')
+    or (d.deadline is not null and d.deadline < (extract(epoch from now()) * 1000));
+  if not decided then return json_build_object('resolved', false); end if;
+  winner := case when coalesce(d.pro,0) >= coalesce(d.con,0) then 'pro' else 'con' end;
+  ok := (r.side = winner);
+  update predictions set resolved = true, correct = ok, resolved_at = now()
+    where user_id = uid and debate_id = p_debate_id;
+  return json_build_object('resolved', true, 'correct', ok, 'winner', winner);
+end;
+$$;
