@@ -31,6 +31,7 @@ import {
   StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal, NotificationBell
 } from "./components";
 import { buildNotifications } from "./lib/notifications";
+import { getLeaderboard, getMyWeekly, weekBounds, type LeagueRow, type MyWeekly } from "./lib/league";
 
 // ─── App ──────────────────────────────────────────────────────────
 // 画面幅でモバイル判定するフック
@@ -81,6 +82,9 @@ export default function App() {
   const bonusTotal = missionBonus + predStats.correct * PRED_AWARD; // ランクに加算する累計ボーナス
   const meRef = useRef<{ me: string | null; isAuthed: boolean }>({ me, isAuthed });
   meRef.current = { me, isAuthed };
+  const week = useMemo(() => weekBounds(), []);
+  const [leaderboard, setLeaderboard] = useState<LeagueRow[]>([]);
+  const [myWeekly, setMyWeekly] = useState<MyWeekly>({ score: 0, rank: null });
   useEffect(() => {
     getStreak(me, isAuthed).then(setStreak);
     getDayActivity(me, isAuthed).then(setTodayAct);
@@ -89,7 +93,9 @@ export default function App() {
       setMyPreds(Object.fromEntries(rows.map(r => [r.debateId, r])));
       setPredStats(predictionStats(rows));
     });
-  }, [me, isAuthed]);
+    getLeaderboard(me, isAuthed, week.start, week.end).then(setLeaderboard);
+    getMyWeekly(me, isAuthed, week.start, week.end).then(setMyWeekly);
+  }, [me, isAuthed, week]);
 
   // ── アバター（DBは profiles.avatar / ローカルは localStorage） ──
   const [localAvatar, setLocalAvatar] = useState<string | null>(() =>
@@ -703,6 +709,43 @@ export default function App() {
               <p style={{ fontSize:11, color:"#16a34a", fontWeight:700, marginTop:9, display:"flex", alignItems:"center", gap:5 }}>
                 <Icn icon={Flame} size={13}/> 予想{predStats.streak}連勝中
               </p>
+            )}
+          </div>
+
+          {/* 週間リーグ（毎週リセット・書く行為を優遇） */}
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-4)", letterSpacing:0.5, textTransform:"uppercase", display:"flex", alignItems:"center", gap:5 }}>
+                <Icn icon={Trophy} size={13} style={{ color:"#b45309" }}/> 週間リーグ
+              </p>
+              <span style={{ fontSize:10, color:"var(--text-4)" }}>あと{week.resetInDays}日でリセット</span>
+            </div>
+            {!me ? (
+              <p style={{ fontSize:10, color:"var(--text-4)" }}>ログインで週間ランキングに参加</p>
+            ) : leaderboard.length === 0 ? (
+              <p style={{ fontSize:11, color:"var(--text-4)" }}>今週はまだポイントがありません。投票やコメントで参加しよう。</p>
+            ) : (
+              <>
+                {leaderboard.slice(0, 5).map((row, i) => {
+                  const mine = row.username === me;
+                  const medal = ["#f59e0b","#9ca3af","#b45309"][i];
+                  return (
+                    <div key={row.username + i} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 6px", borderRadius:8, marginBottom:2,
+                      background: mine ? "var(--pro-light)" : "none" }}>
+                      <span style={{ width:16, textAlign:"center", fontSize:12, fontWeight:800, color: medal || "var(--text-4)" }}>{i+1}</span>
+                      <span style={{ flex:1, fontSize:12, fontWeight: mine?800:600, color: mine?STANCE.pro.color:"var(--text-2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{row.username}{mine?"（あなた）":""}</span>
+                      <span style={{ fontSize:12, fontWeight:800, color:"var(--text)" }}>{fmt(row.score)}</span>
+                    </div>
+                  );
+                })}
+                {myWeekly.rank && myWeekly.rank > 5 && (
+                  <div style={{ marginTop:6, paddingTop:8, borderTop:"1px solid var(--surface-3)", display:"flex", alignItems:"center", gap:8, fontSize:12 }}>
+                    <span style={{ width:16, textAlign:"center", fontWeight:800, color:STANCE.pro.color }}>{myWeekly.rank}</span>
+                    <span style={{ flex:1, fontWeight:800, color:STANCE.pro.color }}>@{me}（あなた）</span>
+                    <span style={{ fontWeight:800, color:"var(--text)" }}>{fmt(myWeekly.score)}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

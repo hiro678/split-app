@@ -241,3 +241,36 @@ begin
   return json_build_object('resolved', true, 'correct', ok, 'winner', winner);
 end;
 $$;
+
+-- ════════════════════════════════════════════════════════════════
+--  #5 週間リーグ — 今週の user_activity を集計（毎週リセット）
+--   重み: 投票1・返信2・コメント3・投稿5・ボーナス1（書く行為を優遇）
+-- ════════════════════════════════════════════════════════════════
+create or replace function weekly_leaderboard(p_start date, p_end date, p_limit int default 10)
+returns table(username text, score int)
+language sql security definer as $$
+  select coalesce(p.username, '—') as username,
+         sum(a.votes + a.comments * 3 + a.replies * 2 + a.debates * 5 + a.points)::int as score
+  from user_activity a
+  left join profiles p on p.id = a.user_id
+  where a.day between p_start and p_end
+  group by p.username
+  having sum(a.votes + a.comments * 3 + a.replies * 2 + a.debates * 5 + a.points) > 0
+  order by score desc
+  limit p_limit;
+$$;
+
+create or replace function my_weekly(p_start date, p_end date)
+returns json language plpgsql security definer as $$
+declare uid uuid := auth.uid(); myscore int; myrank int;
+begin
+  if uid is null then return json_build_object('score', 0, 'rank', null); end if;
+  select coalesce(sum(votes + comments * 3 + replies * 2 + debates * 5 + points), 0) into myscore
+    from user_activity where user_id = uid and day between p_start and p_end;
+  select count(*) + 1 into myrank from (
+    select user_id, sum(votes + comments * 3 + replies * 2 + debates * 5 + points) s
+    from user_activity where day between p_start and p_end group by user_id
+  ) t where t.s > myscore;
+  return json_build_object('score', myscore, 'rank', case when myscore > 0 then myrank else null end);
+end;
+$$;

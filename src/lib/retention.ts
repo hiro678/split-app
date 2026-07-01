@@ -65,6 +65,8 @@ function saveLocal(user: string, s: LocalState) {
   try { localStorage.setItem(LS_KEY(user), JSON.stringify(s)); } catch { /* noop */ }
 }
 const dayOf = (s: LocalState, day: string): DayActivity => s.activity[day] || emptyDay();
+// 週間リーグ(#5)のローカル集計用: 日付→活動 のマップを返す
+export const readLocalActivity = (user: string): Record<string, DayActivity> => loadLocal(user).activity;
 const kindCol = (k: ActivityKind): keyof DayActivity =>
   k === "vote" ? "votes" : k === "comment" ? "comments" : k === "reply" ? "replies" : "debates";
 
