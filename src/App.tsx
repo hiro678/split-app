@@ -28,8 +28,9 @@ import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyB
 
 import { Icn } from "./ui/Icn";
 import {
-  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal
+  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal, NotificationBell
 } from "./components";
+import { buildNotifications } from "./lib/notifications";
 
 // ─── App ──────────────────────────────────────────────────────────
 // 画面幅でモバイル判定するフック
@@ -270,6 +271,8 @@ export default function App() {
   const [dailyOverride, setDailyOverride] = useState<number | null>(null);
   useEffect(() => { getDailyOverride().then(setDailyOverride); }, []);
   const dailyDebate = useMemo(() => pickDailyDebate(debates, todayStr(), dailyOverride), [debates, dailyOverride]);
+  // 通知（反論・いいね・締切間近・結果確定を現在のデータから算出）
+  const notifs = useMemo(() => buildNotifications(debates, me, myPreds), [debates, me, myPreds]);
   const myBadge = getBadge(myRep);
   const nextBadge = BADGES.find(b => b.min > myRep);
 
@@ -475,6 +478,10 @@ export default function App() {
             !isMobile && <div style={{ flex:1 }} />
           )}
           <div style={{ display:"flex", gap: isMobile ? 8 : 10, flexShrink:0, alignItems:"center", marginLeft: isMobile ? "auto" : 0 }}>
+            {me && (
+              <NotificationBell notifs={notifs} me={me}
+                onOpen={(id)=>{ const d = debates.find(x => x.id === id); if (d) dispatch({ type:"SET_ACTIVE", debate:d }); }} />
+            )}
             <button onClick={toggleTheme}
               title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}

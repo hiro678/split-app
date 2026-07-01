@@ -1,10 +1,11 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo, useRef, useEffect } from "react";
-import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search } from "../ui/Icn";
+import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search, Bell } from "../ui/Icn";
 import { STANCE, TOPICS, REPORT_REASONS, PRED_AWARD } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels, pickDailyDebate, isDecided, winnerSide } from "../lib/logic";
 import { getDailyOverride, setDailyOverride } from "../lib/daily";
 import { todayStr } from "../lib/retention";
+import { type Notif, getSeen, markSeen } from "../lib/notifications";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
@@ -1455,6 +1456,59 @@ export function ReportModal({ target, dispatch }) {
 }
 
 // ─── Admin Page ───────────────────────────────────────────────────
+// ─── 通知ベル（#3+#7）──────────────────────────────────────────────
+export function NotificationBell({ notifs, me, onOpen }: { notifs: Notif[]; me: string | null; onOpen: (id: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const [, bump] = useState(0); // markSeen 後の再描画トリガ
+  const seen = getSeen(me);
+  const unread = me ? notifs.filter(n => !seen.has(n.id)).length : 0;
+  const sorted = [...notifs]
+    .sort((a, b) => (seen.has(a.id) ? 1 : 0) - (seen.has(b.id) ? 1 : 0) || b.ts - a.ts)
+    .slice(0, 30);
+  const iconFor: Record<string, any> = { reply: CornerUpLeft, like: Heart, deadline: Clock, result: Trophy };
+  const colorFor: Record<string, string> = { reply: STANCE.pro.color, like: "#e11d48", deadline: "#b45309", result: "#b45309" };
+  const toggle = () => {
+    const willOpen = !open;
+    setOpen(willOpen);
+    if (willOpen && me) { markSeen(me, notifs.map(n => n.id)); bump(x => x + 1); }
+  };
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={toggle} aria-label="通知" title="通知"
+        style={{ position: "relative", width: 38, height: 38, borderRadius: "50%", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--text-2)" }}>
+        <Icn icon={Bell} size={18} />
+        {unread > 0 && (
+          <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", borderRadius: 99, background: STANCE.con.color, color: "#fff", fontSize: 10, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{unread > 9 ? "9+" : unread}</span>
+        )}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+          <div style={{ position: "absolute", right: 0, top: 46, width: 320, maxHeight: 420, overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,.16)", zIndex: 41 }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border)", fontWeight: 800, fontSize: 13, color: "var(--text)" }}>通知</div>
+            {sorted.length === 0 ? (
+              <div style={{ padding: "28px 14px", textAlign: "center", color: "var(--text-4)", fontSize: 13 }}>通知はまだありません</div>
+            ) : sorted.map(n => {
+              const isUnread = !seen.has(n.id);
+              const when = n.ts <= Date.now() ? ago(n.ts) : "";
+              return (
+                <button key={n.id} onClick={() => { onOpen(n.debateId); setOpen(false); }}
+                  style={{ display: "flex", gap: 10, width: "100%", textAlign: "left", padding: "11px 14px", background: isUnread ? "var(--surface-2)" : "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", fontFamily: "inherit", alignItems: "flex-start" }}>
+                  <Icn icon={iconFor[n.type]} size={16} style={{ color: colorFor[n.type], marginTop: 1, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.4 }}>{n.text}</p>
+                    {when && <p style={{ fontSize: 11, color: "var(--text-4)", marginTop: 2 }}>{when}</p>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── 今日の論題: 管理者の手動上書き（折衷案 C）──────────────────────
 function DailyTopicAdmin({ debates }) {
   const [override, setOverride] = useState<number | null>(null);
