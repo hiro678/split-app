@@ -482,6 +482,8 @@ export default function App() {
         @keyframes split-xp-pop { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.12); } 22% { transform: translate(-50%, 0) scale(1); } 82% { opacity: 1; transform: translate(-50%, -8px); } 100% { opacity: 0; transform: translate(-50%, -34px); } }
         @keyframes split-pop-in { 0% { opacity: 0; transform: scale(.8); } 60% { transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes split-badge-spin { 0% { transform: rotate(-12deg) scale(.6); opacity: 0; } 60% { transform: rotate(6deg) scale(1.15); opacity: 1; } 100% { transform: rotate(0) scale(1); opacity: 1; } }
+        @keyframes split-vote-pop { 0% { transform: scale(1); } 35% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes split-plus-rise { 0% { opacity: 0; transform: translateY(6px) scale(.8); } 25% { opacity: 1; transform: translateY(0) scale(1.15); } 100% { opacity: 0; transform: translateY(-22px) scale(1); } }
       `}</style>
 
       <header style={{ position:"sticky", top:0, zIndex:100, background:"var(--surface)", borderBottom:"1px solid var(--border)" }}>

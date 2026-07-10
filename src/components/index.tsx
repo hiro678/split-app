@@ -1010,6 +1010,8 @@ export function UserPage({ author, dispatch }) {
 // ─── Debate Detail ────────────────────────────────────────────────
 export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
   const { notify, isAuthed } = useContext(AppContext);
+  const [justVoted, setJustVoted] = useState<any>(null); // 投票直後のゲーム的演出用
+  const [showGraph, setShowGraph] = useState(false);     // 推移グラフは折りたたみ（既定は非表示）
   // 立場ラベル（未設定の古いデータはタイトルから推定）
   const stanceLbl = {
     pro: d.proLabel || suggestStanceLabels(d.title).pro,
@@ -1091,13 +1093,25 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
             {["pro","con"].map(s => {
               const st=STANCE[s], count=d[s], p=s==="pro"?proP:conP, active=d.userStance===s;
+              const popped = justVoted && justVoted.stance === s; // 直前に押した側だけ演出
               return (
-                <div key={s} onClick={()=>!locked && dispatch({type:"SET_STANCE",id:d.id,stance:s})}
-                  style={{ textAlign:"center", padding:"18px 12px", borderRadius:12, cursor:locked?"default":"pointer",
+                <div key={s} onClick={()=>{
+                    if (locked) return;
+                    if (d.userStance !== s) setJustVoted({ stance: s, id: Date.now() }); // 取消時は演出なし
+                    dispatch({type:"SET_STANCE",id:d.id,stance:s});
+                  }}
+                  style={{ position:"relative", textAlign:"center", padding:"18px 12px", borderRadius:12, cursor:locked?"default":"pointer",
                     background:active?st.bg:"var(--surface-2)", border:`1.5px solid ${active?st.border:"var(--border)"}`, transition:"all .2s",
+                    boxShadow: active ? `0 0 0 3px ${st.bg}` : "none",
+                    animation: popped ? "split-vote-pop .45s cubic-bezier(.4,0,.2,1)" : "none",
                     opacity: locked && !active ? 0.6 : 1 }}>
+                  {popped && (
+                    <span key={justVoted.id} style={{ position:"absolute", top:8, right:12, fontSize:16, fontWeight:800,
+                      color:st.color, pointerEvents:"none", animation:"split-plus-rise .9s ease-out forwards" }}>+1</span>
+                  )}
                   <div style={{ marginBottom:6, display:"flex", justifyContent:"center" }}><Icn icon={st.Icon} size={26} style={{ color:st.color }}/></div>
-                  <div style={{ fontSize:22, fontWeight:800, color:st.color }}>{fmt(count)}</div>
+                  <div style={{ fontSize:22, fontWeight:800, color:st.color, transition:"transform .2s",
+                    transform: popped ? "scale(1.15)" : "scale(1)" }}>{fmt(count)}</div>
                   <div style={{ fontSize:13, fontWeight:700, color:st.color }}>{st.label}</div>
                   <div style={{ fontSize:12.5, fontWeight:700, color:st.color, marginBottom:2 }}>「{stanceLbl[s]}」</div>
                   <div style={{ fontSize:12, color:st.color, opacity:0.8 }}>{p}%</div>
@@ -1151,24 +1165,6 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
             )}
           </div>
 
-          {/* Vote history graph */}
-          <div style={{ marginTop:20, padding:"16px 18px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-              <h4 style={{ fontWeight:700, fontSize:13, color:"var(--text-2)", display:"flex", alignItems:"center", gap:6 }}>
-                <Icn icon={TrendingUp} size={15}/> 投票推移グラフ
-              </h4>
-              <div style={{ display:"flex", gap:10, fontSize:11 }}>
-                <span style={{ display:"flex", alignItems:"center", gap:4, color:STANCE.pro.color, fontWeight:700 }}>
-                  <span style={{ width:10, height:2, background:STANCE.pro.color, display:"inline-block" }}></span> 賛成
-                </span>
-                <span style={{ display:"flex", alignItems:"center", gap:4, color:STANCE.con.color, fontWeight:700 }}>
-                  <span style={{ width:10, height:2, background:STANCE.con.color, display:"inline-block" }}></span> 反対
-                </span>
-              </div>
-            </div>
-            <VoteHistoryGraph history={d.history} createdAt={d.createdAt} />
-          </div>
-
           {!locked && (
             <div style={{ marginTop:18, padding:"14px 18px", borderRadius:12, border:"1.5px dashed var(--border)", textAlign:"center" }}>
               <p style={{ fontSize:14, fontWeight:700, color:"var(--text-2)", marginBottom:10 }}>
@@ -1208,6 +1204,36 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
       </div>
 
       <SplitComments d={d} dispatch={dispatch} />
+
+      {/* 投票推移グラフ（詳細データは下部に格納。根幹はコメント） */}
+      <div style={{ marginBottom:20 }}>
+        <button onClick={()=>setShowGraph(!showGraph)}
+          style={{ display:"flex", alignItems:"center", gap:6, width:"100%", justifyContent:"center",
+            background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10,
+            padding:"10px 14px", cursor:"pointer", fontFamily:"inherit",
+            fontSize:13, fontWeight:700, color:"var(--text-3)" }}>
+          <Icn icon={TrendingUp} size={15}/> 投票推移を見る
+          <Icn icon={showGraph ? ChevronUp : ChevronDown} size={15}/>
+        </button>
+        {showGraph && (
+          <div style={{ marginTop:8, padding:"16px 18px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <h4 style={{ fontWeight:700, fontSize:13, color:"var(--text-2)", display:"flex", alignItems:"center", gap:6 }}>
+                <Icn icon={TrendingUp} size={15}/> 投票推移グラフ
+              </h4>
+              <div style={{ display:"flex", gap:10, fontSize:11 }}>
+                <span style={{ display:"flex", alignItems:"center", gap:4, color:STANCE.pro.color, fontWeight:700 }}>
+                  <span style={{ width:10, height:2, background:STANCE.pro.color, display:"inline-block" }}></span> 賛成
+                </span>
+                <span style={{ display:"flex", alignItems:"center", gap:4, color:STANCE.con.color, fontWeight:700 }}>
+                  <span style={{ width:10, height:2, background:STANCE.con.color, display:"inline-block" }}></span> 反対
+                </span>
+              </div>
+            </div>
+            <VoteHistoryGraph history={d.history} createdAt={d.createdAt} />
+          </div>
+        )}
+      </div>
 
       {/* Related */}
       <RelatedDebates current={d} all={allDebates} dispatch={dispatch} />
