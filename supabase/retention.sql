@@ -349,3 +349,10 @@ $$;
 --   quote = { id, author, stance, excerpt, rowNum }
 -- ════════════════════════════════════════════════════════════════
 alter table replies add column if not exists quote jsonb;
+
+-- ════════════════════════════════════════════════════════════════
+--  P2-9/11: プロフィール拡張 — 表示名（日本語OK）と自己紹介文
+--   username(@ハンドル)はそのまま。display_name は任意の見せ名。
+-- ════════════════════════════════════════════════════════════════
+alter table profiles add column if not exists display_name text;
+alter table profiles add column if not exists bio text;

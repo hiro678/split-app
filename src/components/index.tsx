@@ -9,7 +9,8 @@ import { type Notif, getSeen, markSeen } from "../lib/notifications";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
 import { signUp, signIn } from "../lib/supabase";
-import { validateUsername } from "../lib/moderation";
+import { validateUsername, validateDisplayName } from "../lib/moderation";
+import { getProfileExtras, saveProfileExtras, type ProfileExtras } from "../lib/profile";
 import { useTypingGuard } from "../lib/integrity";
 import { AVATARS, Avatar } from "../avatars";
 
@@ -861,10 +862,32 @@ export function RelatedDebates({ current, all, dispatch }) {
 
 // ─── User Page (マイページ / プロフィール) ───────────────────────
 export function UserPage({ author, dispatch }) {
-  const { debates, myRep, me, myAvatar, setAvatar } = useContext(AppContext);
+  const { debates, myRep, me, myAvatar, setAvatar, myUserId, notify } = useContext(AppContext);
   const rep = author === me ? myRep : repOf(author);
   const badge = getBadge(rep);
   const perk = perkOf(rep);
+
+  // ── プロフィール拡張（表示名・自己紹介文）──
+  const [extras, setExtras] = useState<ProfileExtras>({ displayName: "", bio: "" });
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [draftBio, setDraftBio] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    setEditing(false);
+    getProfileExtras(author).then(setExtras);
+  }, [author]);
+  const nameErr = validateDisplayName(draftName);
+  const startEdit = () => { setDraftName(extras.displayName); setDraftBio(extras.bio); setEditing(true); };
+  const saveProfile = async () => {
+    if (nameErr) return;
+    setSaving(true);
+    const next = { displayName: draftName.trim(), bio: draftBio.trim().slice(0, 200) };
+    const ok = await saveProfileExtras(author, myUserId ?? null, next);
+    setSaving(false);
+    if (ok) { setExtras(next); setEditing(false); notify?.("プロフィールを更新しました"); }
+    else notify?.("保存に失敗しました", "con");
+  };
 
   const posts = debates.filter(d => d.author === author);
   const myBubbles = [];
@@ -898,7 +921,8 @@ export function UserPage({ author, dispatch }) {
           <Avatar id={isMe ? myAvatar : null} size={64} fallback={author[0].toUpperCase()} />
           <div style={{ minWidth:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
-              <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>@{author}</h2>
+              <h2 style={{ fontSize:22, fontWeight:800, color:"var(--text)" }}>{extras.displayName || `@${author}`}</h2>
+              {extras.displayName && <span style={{ fontSize:13, color:"var(--text-4)", fontWeight:600 }}>@{author}</span>}
               {isMe && <span style={{ fontSize:11, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 8px", borderRadius:99, fontWeight:700 }}>あなた</span>}
               {isPopular && <span style={{ fontSize:11, background:"var(--rose-bg)", color:"#e11d48", padding:"1px 8px", borderRadius:99, fontWeight:700, border:"1px solid #fecdd3", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Flame} size={12}/> 人気ユーザー</span>}
             </div>
@@ -912,6 +936,44 @@ export function UserPage({ author, dispatch }) {
             </div>
           </div>
         </div>
+
+        {/* 自己紹介文（本人は編集可・コピペ可） */}
+        {!editing && extras.bio && (
+          <p style={{ marginTop:14, fontSize:13.5, color:"var(--text-2)", lineHeight:1.8, whiteSpace:"pre-wrap", maxWidth:640 }}>
+            {linkifyText(extras.bio, "bio")}
+          </p>
+        )}
+        {isMe && !editing && (
+          <button onClick={startEdit} style={{ ...btnGhost, marginTop:12, padding:"7px 16px", fontSize:12.5, display:"inline-flex", alignItems:"center", gap:5 }}>
+            <Icn icon={PenLine} size={13}/> プロフィールを編集
+          </button>
+        )}
+        {isMe && editing && (
+          <div style={{ marginTop:14, padding:"14px 16px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12, maxWidth:560 }}>
+            <label style={labelStyle}>表示名（任意・日本語OK）</label>
+            <input value={draftName} onChange={e=>setDraftName(e.target.value)} maxLength={20}
+              placeholder="例: ヒロ / 未設定なら @ハンドルを表示" aria-label="表示名"
+              style={{ ...inputStyle, marginBottom:4, ...(nameErr ? { border:`1.5px solid ${STANCE.con.color}` } : {}) }} />
+            {nameErr ? (
+              <p style={{ fontSize:11, color:STANCE.con.color, fontWeight:700, marginBottom:10, display:"flex", alignItems:"center", gap:4 }}>
+                <Icn icon={AlertCircle} size={12}/> {nameErr}
+              </p>
+            ) : (
+              <p style={{ fontSize:11, color:"var(--text-4)", marginBottom:10 }}>@{author} はそのまま。表示名は名前として各所に出ます（20文字まで）</p>
+            )}
+            <label style={labelStyle}>自己紹介文（200文字まで・貼り付け可）</label>
+            <textarea value={draftBio} onChange={e=>setDraftBio(e.target.value)} maxLength={200} rows={3}
+              placeholder="関心のあるテーマ、スタンス、ひとことなど" aria-label="自己紹介文"
+              style={{ ...inputStyle, resize:"vertical", lineHeight:1.7 }} />
+            <p style={{ fontSize:10.5, color:"var(--text-4)", marginTop:3, textAlign:"right" }}>{draftBio.length}/200</p>
+            <div style={{ display:"flex", gap:8, marginTop:8 }}>
+              <button onClick={saveProfile} disabled={saving || !!nameErr} style={{ ...btnPrimary, padding:"8px 20px", fontSize:13, opacity: saving||nameErr ? 0.6 : 1 }}>
+                {saving ? "保存中…" : "保存"}
+              </button>
+              <button onClick={()=>setEditing(false)} style={{ ...btnGhost, padding:"8px 20px", fontSize:13 }}>キャンセル</button>
+            </div>
+          </div>
+        )}
 
         <div style={{ display:"flex", gap:10, marginTop:20 }}>
           <Stat label="投稿したディベート" value={posts.length} color={STANCE.pro.color} />

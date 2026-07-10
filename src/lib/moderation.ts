@@ -50,3 +50,35 @@ export function validateUsername(name: string): string | null {
 
   return null;
 }
+
+// ─── 表示名（日本語OK）のモデレーション ────────────────────────────
+// 日本語の不適切語（部分一致で禁止）。強い語のみ・随時追記して運用。
+const JP_BANNED = [
+  "死ね", "殺す", "殺せ", "しね", "ころす", "レイプ", "強姦",
+  "セックス", "ちんこ", "まんこ", "うんこ野郎", "きちがい", "気違い",
+  "在日死", "劣等民族", "皆殺",
+];
+// なりすまし防止（表示名の完全一致・空白除去後）
+const JP_RESERVED = ["運営", "管理者", "公式", "スプリット公式", "split公式", "サポート"];
+
+/**
+ * 表示名を検証。問題があればエラーメッセージ、なければ null を返す。
+ * ユーザー名(@ハンドル)と違い日本語・絵文字も可。1〜20文字。
+ */
+export function validateDisplayName(name: string): string | null {
+  const n = (name || "").trim();
+  if (!n) return null; // 空は「未設定」として許可（@ハンドル表示に戻る）
+  if (n.length > 20) return "表示名は20文字以内にしてください";
+  if (/[\n\r\t]/.test(n)) return "表示名に改行やタブは使えません";
+  if (/https?:\/\//i.test(n)) return "表示名にURLは使えません";
+  if (/^@/.test(n)) return "表示名を @ で始めることはできません（ハンドルと紛らわしいため）";
+
+  const compact = n.replace(/\s/g, "");
+  if (JP_RESERVED.includes(compact)) return "その表示名は使用できません";
+  if (RESERVED.includes(compact.toLowerCase())) return "その表示名は使用できません";
+  if (JP_BANNED.some(w => compact.includes(w))) return "表示名に不適切な語が含まれています";
+  const norm = normalize(compact);
+  if (BANNED.some(w => norm.includes(w))) return "表示名に不適切な語が含まれています";
+
+  return null;
+}

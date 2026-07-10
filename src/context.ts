@@ -7,6 +7,7 @@ export type AppCtx = {
   myRep: number;
   me: string | null;
   isAuthed: boolean;
+  myUserId?: string | null; // Supabase auth.users.id（プロフィール更新のRLS用）
   myAvatar?: string | null;
   setAvatar?: (id: string | null) => void;
   notify?: (msg: string, kind?: string) => void;

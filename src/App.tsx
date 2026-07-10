@@ -446,7 +446,7 @@ export default function App() {
   const adminAllowed = isSupabaseConfigured ? isAdminUser : adminUnlocked;
 
   return (
-    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myAvatar, setAvatar, notify }}>
+    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myUserId: session?.user?.id ?? null, myAvatar, setAvatar, notify }}>
     <div style={{ fontFamily:"var(--font-body)", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
