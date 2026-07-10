@@ -1189,7 +1189,7 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
           <div style={{ flex:d.con, background:STANCE.con.bar, transition:"flex .5s" }} />
         </div>
         {d.thumbnail && (
-          <img src={d.thumbnail} alt="" style={{ width:"100%", maxHeight:260, objectFit:"cover", display:"block" }} />
+          <img src={d.thumbnail} alt="" style={{ width:"100%", maxHeight:260, objectFit:"cover", objectPosition:`50% ${d.thumbPos ?? 50}%`, display:"block" }} />
         )}
         <div style={{ padding:"24px 28px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
@@ -1410,7 +1410,7 @@ export function DebateCard({ d, dispatch }) {
         <div style={{ flex:d.con, background:STANCE.con.bar, transition:"flex .5s" }} />
       </div>
       {d.thumbnail && (
-        <img src={d.thumbnail} alt="" style={{ width:"100%", height:160, objectFit:"cover", display:"block" }} />
+        <img src={d.thumbnail} alt="" style={{ width:"100%", height:160, objectFit:"cover", objectPosition:`50% ${d.thumbPos ?? 50}%`, display:"block" }} />
       )}
       <div style={{ padding:"16px 20px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
@@ -1476,6 +1476,7 @@ export function NewDebateModal({ dispatch }) {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
+  const [thumbPos, setThumbPos] = useState(50); // 表示位置（上下 0-100%）
   // 立場ラベル（空ならタイトルからの自動サジェストを採用）
   const [proLabel, setProLabel] = useState("");
   const [conLabel, setConLabel] = useState("");
@@ -1520,7 +1521,7 @@ export function NewDebateModal({ dispatch }) {
       pro:0, con:0, status:"active",
       deadline: Date.now() + duration*24*3600*1000,
       commentCount:0, createdAt:new Date(), author:me, saved:false, userStance:null,
-      tags, thumbnail,
+      tags, thumbnail, thumbPos,
       proLabel: (proLabel.trim() || suggested.pro), conLabel: (conLabel.trim() || suggested.con),
       history: [{ t:0, pro:0, con:0, hour:0 }],
       aiSummary: null,
@@ -1606,11 +1607,23 @@ export function NewDebateModal({ dispatch }) {
         <div>
           <label style={labelStyle}>サムネイル画像 (任意)</label>
           {thumbnail ? (
-            <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--border)" }}>
-              <img src={thumbnail} alt="サムネイル" style={{ width:"100%", maxHeight:180, objectFit:"cover", display:"block" }} />
-              <button onClick={()=>setThumbnail(null)} title="画像を削除"
-                style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
-                  border:"none", borderRadius:99, width:26, height:26, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={X} size={14}/></button>
+            <div>
+              {/* 一覧カードと同じ切り抜き（高さ160・cover）でプレビュー */}
+              <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--border)" }}>
+                <img src={thumbnail} alt="サムネイル"
+                  style={{ width:"100%", height:160, objectFit:"cover", objectPosition:`50% ${thumbPos}%`, display:"block" }} />
+                <span style={{ position:"absolute", left:8, bottom:8, background:"rgba(0,0,0,0.55)", color:"#fff",
+                  fontSize:10.5, fontWeight:700, borderRadius:99, padding:"2px 9px" }}>一覧カードではこの範囲が表示されます</span>
+                <button onClick={()=>setThumbnail(null)} title="画像を削除"
+                  style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff",
+                    border:"none", borderRadius:99, width:26, height:26, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={X} size={14}/></button>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:8 }}>
+                <span style={{ fontSize:11.5, color:"var(--text-3)", fontWeight:600, flexShrink:0 }}>表示位置（上下）</span>
+                <input type="range" min={0} max={100} value={thumbPos}
+                  onChange={e=>setThumbPos(Number(e.target.value))}
+                  aria-label="サムネイルの表示位置" style={{ flex:1 }} />
+              </div>
             </div>
           ) : (
             <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6,

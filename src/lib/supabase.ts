@@ -108,6 +108,7 @@ export async function fetchDebates() {
     commentCount: d.comment_count, tags: d.tags || [], thumbnail: d.thumbnail || null,
     aiSummary: d.ai_summary || null, history: d.history || [], integrity: d.integrity || null,
     proLabel: d.pro_label || null, conLabel: d.con_label || null,
+    thumbPos: d.thumb_pos ?? 50,
     userStance: null, saved: false,
     proComments: proByDebate[d.id] || [], conComments: conByDebate[d.id] || [],
   }));
@@ -124,6 +125,7 @@ const debateRow = (d) => ({
   id: d.id, title: d.title, description: d.description, topic_id: d.topicId, author: d.author,
   status: d.status, deadline: toMs(d.deadline), created_at: toMs(d.createdAt), pro: d.pro, con: d.con,
   comment_count: d.commentCount, tags: d.tags || [], thumbnail: d.thumbnail || null,
+  thumb_pos: d.thumbPos ?? 50,
   ai_summary: d.aiSummary || null, history: d.history || [], integrity: d.integrity || null,
   pro_label: d.proLabel || null, con_label: d.conLabel || null,
 });

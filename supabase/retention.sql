@@ -357,6 +357,9 @@ alter table replies add column if not exists quote jsonb;
 alter table profiles add column if not exists display_name text;
 alter table profiles add column if not exists bio text;
 
+-- P3-15: サムネイルの表示位置（上下 0-100%。一覧カードの切り抜き調整）
+alter table debates add column if not exists thumb_pos int;
+
 -- ════════════════════════════════════════════════════════════════
 --  P2-10: アイコン写真 — Storage バケット avatars（公開読み取り）
 --   書き込みは自分のフォルダ {auth.uid()}/... のみ。
