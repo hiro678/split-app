@@ -169,6 +169,10 @@ export const avatarById = (id?: string | null) => AVATARS.find(a => a.id === id)
 
 // 円形フレームでアバターを描画。未設定/未知IDは頭文字フォールバック。
 export function Avatar({ id, size = 40, fallback }: { id?: string | null; size?: number; fallback?: string }) {
+  // URL / データURI はアップロードされた写真として表示
+  if (id && (/^https?:\/\//.test(id) || id.startsWith("data:image/"))) {
+    return <img src={id} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, display: "block", background: "var(--surface-3)" }} />;
+  }
   const a = avatarById(id);
   if (a) {
     const S = a.Svg;

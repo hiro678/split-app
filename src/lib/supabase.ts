@@ -48,6 +48,18 @@ export async function updateAvatar(userId, avatar) {
 }
 
 // プロフィール（username / is_admin / avatar）を取得
+// ─── P2-10: アバター画像を Storage にアップロードし公開URLを返す ───
+//  バケット avatars（公開読み取り）。パスは {userId}/avatar-{ts}.jpg。
+export async function uploadAvatar(userId: string, blob: Blob): Promise<string | null> {
+  if (!supabase || !userId) return null;
+  const path = `${userId}/avatar-${Date.now()}.jpg`;
+  const { error } = await supabase.storage.from("avatars")
+    .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+  if (error) { console.error("[supabase] uploadAvatar", error); return null; }
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return data?.publicUrl ?? null;
+}
+
 // 自分の投票一覧（debateId → stance）。リロード/別端末でも投票済みを復元する。
 export async function fetchMyVotes(): Promise<Record<number, "pro" | "con">> {
   if (!supabase) return {};

@@ -8,9 +8,10 @@ import { todayStr } from "../lib/retention";
 import { type Notif, getSeen, markSeen } from "../lib/notifications";
 import { AppContext } from "../context";
 import { btnPrimary, btnGhost, cActBtn, labelStyle, inputStyle, replyBtn } from "../styles";
-import { signUp, signIn } from "../lib/supabase";
+import { signUp, signIn, isSupabaseConfigured, uploadAvatar } from "../lib/supabase";
 import { validateUsername, validateDisplayName } from "../lib/moderation";
 import { getProfileExtras, saveProfileExtras, type ProfileExtras } from "../lib/profile";
+import { fileToAvatarBlob, blobToDataUrl } from "../lib/image";
 import { useTypingGuard } from "../lib/integrity";
 import { AVATARS, Avatar } from "../avatars";
 
@@ -889,6 +890,31 @@ export function UserPage({ author, dispatch }) {
     else notify?.("保存に失敗しました", "con");
   };
 
+  // ── アイコン写真のアップロード（256px中央クロップ→JPEG）──
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const onPickPhoto = async (e: any) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 同じファイルの再選択を許可
+    if (!file) return;
+    setUploading(true);
+    try {
+      const blob = await fileToAvatarBlob(file);
+      if (isSupabaseConfigured) {
+        const url = await uploadAvatar(myUserId ?? "", blob);
+        if (!url) throw new Error("アップロードに失敗しました（Storage未設定の可能性）");
+        setAvatar?.(url);
+      } else {
+        setAvatar?.(await blobToDataUrl(blob)); // ローカルモードはデータURLで保存
+      }
+      notify?.("アイコンを更新しました");
+    } catch (err: any) {
+      notify?.(err?.message || "アップロードに失敗しました", "con");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const posts = debates.filter(d => d.author === author);
   const myBubbles = [];
   debates.forEach(d => {
@@ -992,8 +1018,30 @@ export function UserPage({ author, dispatch }) {
       {isMe && setAvatar && (
         <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 20px", marginBottom:16 }}>
           <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", marginBottom:4 }}>アイコンを選ぶ</h3>
-          <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:14 }}>ランクが上がると選べるアイコンが増えます（実績解放）。</p>
+          <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:14 }}>写真のアップロードもできます。プリセットはランクが上がると解放されます。</p>
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPickPhoto} style={{ display:"none" }} aria-label="アイコン写真を選択" />
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(84px, 1fr))", gap:10 }}>
+            {/* 写真アップロード（自由画像） */}
+            {(() => {
+              const isPhoto = !!myAvatar && (/^https?:\/\//.test(myAvatar) || myAvatar.startsWith("data:image/"));
+              return (
+                <button onClick={()=>!uploading && fileRef.current?.click()} disabled={uploading}
+                  title="写真をアップロード（正方形に切り抜かれます）" aria-label="写真をアップロード"
+                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding:"10px 6px", borderRadius:12,
+                    border:`2px ${isPhoto ? "solid" : "dashed"} ${isPhoto ? STANCE.pro.color : "var(--border-2)"}`,
+                    background: isPhoto ? STANCE.pro.bg : "var(--surface-2)", cursor: uploading ? "wait" : "pointer", fontFamily:"inherit" }}>
+                  {isPhoto ? (
+                    <div style={{ lineHeight:0 }}><Avatar id={myAvatar} size={52} /></div>
+                  ) : (
+                    <div style={{ width:52, height:52, borderRadius:"50%", background:"var(--surface-3)",
+                      display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-3)" }}>
+                      <Icn icon={ImageIcon} size={22}/>
+                    </div>
+                  )}
+                  <span style={{ fontSize:10, color:"var(--text-3)", fontWeight:700 }}>{uploading ? "アップ中…" : "写真を選ぶ"}</span>
+                </button>
+              );
+            })()}
             {(() => {
               const selected = !myAvatar;
               return (
