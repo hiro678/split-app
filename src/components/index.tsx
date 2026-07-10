@@ -12,6 +12,7 @@ import { signUp, signIn, isSupabaseConfigured, uploadAvatar } from "../lib/supab
 import { validateUsername, validateDisplayName } from "../lib/moderation";
 import { getProfileExtras, saveProfileExtras, type ProfileExtras } from "../lib/profile";
 import { fileToAvatarBlob, blobToDataUrl } from "../lib/image";
+import { THEMES } from "../data/themes";
 import { useTypingGuard } from "../lib/integrity";
 import { AVATARS, Avatar } from "../avatars";
 
@@ -863,7 +864,7 @@ export function RelatedDebates({ current, all, dispatch }) {
 
 // ─── User Page (マイページ / プロフィール) ───────────────────────
 export function UserPage({ author, dispatch }) {
-  const { debates, myRep, me, myAvatar, setAvatar, myUserId, notify } = useContext(AppContext);
+  const { debates, myRep, me, myAvatar, setAvatar, myUserId, notify, theme, setTheme } = useContext(AppContext);
   const rep = author === me ? myRep : repOf(author);
   const badge = getBadge(rep);
   const perk = perkOf(rep);
@@ -1073,6 +1074,35 @@ export function UserPage({ author, dispatch }) {
                     )}
                   </div>
                   {!unlocked && <span style={{ fontSize:10, color:"var(--text-4)" }}>Lv.{a.unlockTier}で解放</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* テーマ（6色から選択） */}
+      {isMe && setTheme && (
+        <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"18px 20px", marginBottom:16 }}>
+          <h3 style={{ fontWeight:800, fontSize:15, color:"var(--text)", marginBottom:4 }}>テーマ</h3>
+          <p style={{ fontSize:12, color:"var(--text-3)", marginBottom:14 }}>サイト全体の配色を選べます。ヘッダーの月/太陽ボタンはライト系⇔ダーク系の早替えです。</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(96px, 1fr))", gap:10 }}>
+            {THEMES.map(t => {
+              const selected = theme === t.id;
+              return (
+                <button key={t.id} onClick={()=>setTheme(t.id)} aria-label={`テーマ: ${t.label}`}
+                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:7, padding:"10px 6px", borderRadius:12,
+                    border:`2px solid ${selected ? STANCE.pro.color : "var(--border)"}`,
+                    background: selected ? STANCE.pro.bg : "var(--surface-2)", cursor:"pointer", fontFamily:"inherit" }}>
+                  {/* プレビュー: 背景+カード+賛否バー */}
+                  <div style={{ width:58, height:40, borderRadius:8, background:t.preview.bg, border:"1px solid rgba(128,128,128,.25)", padding:5, display:"flex", flexDirection:"column", gap:3 }}>
+                    <div style={{ flex:1, borderRadius:4, background:t.preview.surface, border:"1px solid rgba(128,128,128,.18)" }} />
+                    <div style={{ height:5, borderRadius:99, overflow:"hidden", display:"flex" }}>
+                      <div style={{ width:"55%", background:"#93c5fd" }} />
+                      <div style={{ flex:1, background:"#fca5a5" }} />
+                    </div>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, color: selected ? STANCE.pro.color : "var(--text-3)" }}>{t.label}</span>
                 </button>
               );
             })}

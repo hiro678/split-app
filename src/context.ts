@@ -11,6 +11,8 @@ export type AppCtx = {
   myAvatar?: string | null;
   setAvatar?: (id: string | null) => void;
   notify?: (msg: string, kind?: string) => void;
+  theme?: string;
+  setTheme?: (id: string) => void;
 };
 
 // ─── App context (dispatch / debates / 動的rep を配布) ────────────

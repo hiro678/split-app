@@ -13,6 +13,7 @@ import {
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS, PRED_AWARD } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate, isDecided, winnerSide } from "./lib/logic";
 import { getDailyOverride } from "./lib/daily";
+import { THEMES, themeById } from "./data/themes";
 import {
   getPredictions, setPrediction as savePrediction, resolvePending, predictionStats,
   type PredSide, type PredRow, type PredStats,
@@ -401,18 +402,19 @@ export default function App() {
   // ナビゲーション時はドロワーを閉じる
   useEffect(() => { setDrawerOpen(false); }, [activeDebate, activeUser, activeAdmin, activeTopic]);
 
-  // ── テーマ (ライト / ダーク) ──────────────────────────────
+  // ── テーマ（6種から選択。ヘッダーのトグルはライト系⇔ダーク系の早替え）──
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("split-theme");
-    if (saved === "light" || saved === "dark") return saved;
+    if (saved && THEMES.some(t => t.id === saved)) return saved;
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("split-theme", theme);
   }, [theme]);
-  const toggleTheme = useCallback(() => setTheme(t => (t === "dark" ? "light" : "dark")), []);
+  const isDarkTheme = themeById(theme).kind === "dark";
+  const toggleTheme = useCallback(() => setTheme(t => (themeById(t).kind === "dark" ? "light" : "dark")), []);
 
   // ── 管理者ロック（暫定）: URL に #admin でパスコード入力 → 解錠 ──
   //   ※ クライアント側の簡易ガード。実運用では Supabase Auth + ロール(RLS)へ置換。
@@ -446,7 +448,7 @@ export default function App() {
   const adminAllowed = isSupabaseConfigured ? isAdminUser : adminUnlocked;
 
   return (
-    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myUserId: session?.user?.id ?? null, myAvatar, setAvatar, notify }}>
+    <AppContext.Provider value={{ dispatch, debates, myRep, me, isAuthed, myUserId: session?.user?.id ?? null, myAvatar, setAvatar, notify, theme, setTheme }}>
     <div style={{ fontFamily:"var(--font-body)", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
@@ -472,6 +474,47 @@ export default function App() {
           --rose-bg: rgba(205,92,82,.20); --green-bg: rgba(120,160,80,.20); --amber-bg: rgba(196,150,70,.20);
           --violet-1: rgba(180,150,90,.16); --violet-2: rgba(180,150,90,.10); --violet-border: rgba(160,135,80,.40);
         }
+        /* ── 追加テーマ（マイページで選択） ── */
+        :root[data-theme="snow"] { /* クールで無彩色のライト */
+          --bg: #f1f4f7; --surface: #ffffff; --surface-2: #e9edf2; --surface-3: #dfe5ec;
+          --border: #d5dce4; --border-2: #b9c3cf;
+          --text: #16181d; --text-2: #3d434d; --text-3: #646d7a; --text-4: #939ca9;
+          --btn-active: #16181d;
+          --pro-bg: #dbe7f8; --pro-light: #e9f1fb; --con-bg: #f8e2e2; --con-light: #fbeeee;
+          --rose-bg: #f8e2e6; --green-bg: #ddedd9; --amber-bg: #f4ecd2;
+          --violet-1: #e7e4f4; --violet-2: #f1effa; --violet-border: #cdc7e8;
+        }
+        :root[data-theme="sakura"] { /* 桜色のあたたかいライト */
+          --bg: #f9eef1; --surface: #fdf7f8; --surface-2: #f3e4e8; --surface-3: #ecd9df;
+          --border: #e5d0d7; --border-2: #d0b2bc;
+          --text: #291b20; --text-2: #4f3d44; --text-3: #78626b; --text-4: #a28d95;
+          --btn-active: #8a3a4d;
+          --pro-bg: #e2e8f6; --pro-light: #edf1fa; --con-bg: #f8dfe4; --con-light: #fbecef;
+          --rose-bg: #f8dfe6; --green-bg: #e2ecdc; --amber-bg: #f4e8d4;
+          --violet-1: #f0e2ec; --violet-2: #f7edf3; --violet-border: #dcc2d2;
+        }
+        :root[data-theme="midnight"] { /* 紺色のクールなダーク */
+          --bg: #0e1420; --surface: #161e2e; --surface-2: #0b101a; --surface-3: #1f2a3f;
+          --border: #283350; --border-2: #39476b;
+          --text: #e6ecf7; --text-2: #b7c2d8; --text-3: #8391ad; --text-4: #5c6a85;
+          --btn-active: #2f4fae;
+          --pro-bg: rgba(96,138,214,.22); --pro-light: rgba(96,138,214,.13);
+          --con-bg: rgba(205,92,82,.22); --con-light: rgba(205,92,82,.13);
+          --rose-bg: rgba(205,92,82,.22); --green-bg: rgba(110,170,110,.20); --amber-bg: rgba(196,150,70,.20);
+          --violet-1: rgba(120,120,200,.18); --violet-2: rgba(120,120,200,.10); --violet-border: rgba(130,130,210,.40);
+        }
+        :root[data-theme="forest"] { /* 深緑の落ち着いたダーク */
+          --bg: #11170f; --surface: #1a2317; --surface-2: #0d120b; --surface-3: #243020;
+          --border: #2f3d2a; --border-2: #44573c;
+          --text: #e9efe4; --text-2: #c2cfb8; --text-3: #8fa184; --text-4: #65755c;
+          --btn-active: #3e6b3a;
+          --pro-bg: rgba(96,138,214,.20); --pro-light: rgba(96,138,214,.12);
+          --con-bg: rgba(205,92,82,.20); --con-light: rgba(205,92,82,.12);
+          --rose-bg: rgba(205,92,82,.20); --green-bg: rgba(120,170,90,.22); --amber-bg: rgba(196,150,70,.20);
+          --violet-1: rgba(140,170,110,.16); --violet-2: rgba(140,170,110,.10); --violet-border: rgba(130,160,100,.40);
+        }
+        :root[data-theme="snow"], :root[data-theme="sakura"] { color-scheme: light; }
+        :root[data-theme="dark"], :root[data-theme="midnight"], :root[data-theme="forest"] { color-scheme: dark; }
         html { color-scheme: light dark; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); font-family: var(--font-body); transition: background .25s; }
@@ -534,10 +577,10 @@ export default function App() {
                 onOpen={(id)=>{ const d = debates.find(x => x.id === id); if (d) dispatch({ type:"SET_ACTIVE", debate:d }); }} />
             )}
             <button onClick={toggleTheme}
-              title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
-              aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+              title={isDarkTheme ? "ライト系に切り替え" : "ダーク系に切り替え"}
+              aria-label={isDarkTheme ? "ライト系に切り替え" : "ダーク系に切り替え"}
               style={{ background:"none", color:"var(--text-2)",
-                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={theme === "dark" ? Sun : Moon} size={18}/></button>
+                border:"1.5px solid var(--border)", borderRadius:99, width:38, height:38, cursor:"pointer", fontFamily:"inherit", flexShrink:0, display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={isDarkTheme ? Sun : Moon} size={18}/></button>
             {adminAllowed && (
               <button onClick={()=>dispatch({type:"SET_ADMIN",on:!activeAdmin})}
                 title="管理者ダッシュボード" aria-label="管理者ダッシュボード"
