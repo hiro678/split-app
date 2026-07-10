@@ -129,7 +129,12 @@ export default function App() {
       const d = s.debates.find(x => x.id === action.id);
       if (!d || d.status === "closed") return;
       const next = d.userStance === action.stance ? null : action.stance;
-      notify(next ? `「${STANCE[next].label}」に投票しました` : "投票を取り消しました", next ? next : "info");
+      // 立場の切替は肯定的に伝える（意見が変わる＝良い議論の証、という文化づくり）
+      if (next && d.userStance && d.userStance !== next) {
+        notify(`「${STANCE[next].label}」に立場を変えました — 考えが動くのは良い議論の証`, next);
+      } else {
+        notify(next ? `「${STANCE[next].label}」に投票しました` : "投票を取り消しました", next ? next : "info");
+      }
     } else if (action.type === "ADD_COMMENT") notify("コメントを投稿しました", "pro");
     else if (action.type === "ADD_REPLY") notify("返信を投稿しました", "pro");
     else if (action.type === "ADD_DEBATE") notify("ディベートを作成しました", "pro");

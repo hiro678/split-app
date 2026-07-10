@@ -1173,6 +1173,9 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
               <StancePicker current={d.userStance} onChange={s=>dispatch({type:"SET_STANCE",id:d.id,stance:s})} labels={stanceLbl} />
               {!isAuthed && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>投票にはログインが必要です</p>}
               {d.userStance && <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8 }}>もう一度クリックで取り消し</p>}
+              <p style={{ fontSize:12, color:"var(--text-4)", marginTop:8, lineHeight:1.6 }}>
+                期間内なら、立場は何度でも変えられます。良い意見を取り入れて考えが変わるのは、悪いことじゃない。
+              </p>
             </div>
           )}
 
@@ -1201,6 +1204,7 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
         <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:700, color:STANCE.pro.color }}><Icn icon={ThumbsUp} size={13}/>左＝賛成</span>
         <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontWeight:700, color:STANCE.con.color }}><Icn icon={ThumbsDown} size={13}/>右＝反対</span>
         <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={CornerUpLeft} size={13}/>各行は前の発言への返信・反論です</span>
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={Heart} size={13}/>投票と、個々のコメントへの共感は別。反対派でも良い賛成意見にいいねしていい</span>
       </div>
 
       <SplitComments d={d} dispatch={dispatch} />
