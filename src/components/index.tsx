@@ -719,9 +719,10 @@ export function SplitComments({ d, dispatch }) {
           {["pro","con"].map(s => {
             const st = STANCE[s];
             return (
-              <div key={s} style={{ textAlign:"center", padding:"28px 12px", color:"var(--text-4)",
+              <div key={s} style={{ textAlign:"center", padding:"28px 12px",
                 fontSize:13, border:`1.5px dashed ${st.border}`, borderRadius:10, background:st.light }}>
-                まだ{st.label}意見がありません
+                <p style={{ fontWeight:800, color:st.color, marginBottom:4 }}>まだ{st.label}意見がない。</p>
+                <p style={{ color:"var(--text-4)", fontSize:12 }}>最初の一言は、君の番だ。</p>
               </div>
             );
           })}
@@ -1720,7 +1721,7 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 // ─── Shared styles は src/styles.js に分離 ─────────────────────────
 
 // ─── Hero（初見向け説明バナー） ───────────────────────────────────
-export function HeroBanner({ onDismiss }) {
+export function HeroBanner({ onDismiss, onStart }) {
   const steps = [
     { Icon: Target, t: "テーマを選ぶ", d: "賛否を問える話題を探す" },
     { Icon: ThumbsUp, t: "立場を表明", d: "賛成 / 反対を選ぶ" },
@@ -1729,19 +1730,24 @@ export function HeroBanner({ onDismiss }) {
     { Icon: Trophy, t: "決着を見る", d: "期間終了で勝敗が確定" },
   ];
   return (
-    <div style={{ position:"relative", marginBottom:16, padding:"20px 22px", borderRadius:16,
+    <div style={{ position:"relative", marginBottom:16, padding:"24px 24px 20px", borderRadius:16,
       background:"linear-gradient(135deg, var(--pro-bg), var(--con-bg))", border:"1px solid var(--border)" }}>
       <button onClick={onDismiss} title="閉じる" aria-label="説明を閉じる"
         style={{ position:"absolute", top:12, right:12, background:"none", border:"none", cursor:"pointer", color:"var(--text-3)", display:"inline-flex" }}>
         <Icn icon={X} size={18}/>
       </button>
-      <h2 style={{ fontSize:20, fontWeight:800, color:"var(--text)", letterSpacing:-0.4, marginBottom:6 }}>
-        賛成と反対を「構造化」するディベート広場
+      <h2 style={{ fontSize:30, fontWeight:800, color:"var(--text)", letterSpacing:-0.6, lineHeight:1.25, marginBottom:8 }}>
+        君の思いを、世界にぶつけよう。
       </h2>
-      <p style={{ fontSize:13.5, color:"var(--text-2)", lineHeight:1.7, marginBottom:14, maxWidth:560 }}>
-        Split は、あらゆるテーマについて賛成・反対の意見と根拠を左右に並べて可視化するプラットフォームです。
-        投票で賛否の分布が一目でわかり、コメントで議論の流れを追えます。
+      <p style={{ fontSize:14, color:"var(--text-2)", lineHeight:1.7, marginBottom:14, maxWidth:560 }}>
+        賛成か、反対か。Splitは、あらゆるテーマの賛否がぶつかり合う討論の広場。
+        観るだけでも面白い。参加すれば、もっと面白い。
       </p>
+      {onStart && (
+        <button onClick={onStart} style={{ ...btnPrimary, marginBottom:16, padding:"10px 26px", fontSize:14.5 }}>
+          言いたいことがある
+        </button>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:10 }}>
         {steps.map((s, i) => (
           <div key={s.t} style={{ display:"flex", alignItems:"flex-start", gap:8, background:"var(--surface)",

@@ -809,7 +809,8 @@ export default function App() {
           ) : (
             <>
               {!heroDismissed && !activeTag && !search && (
-                <HeroBanner onDismiss={dismissHero} />
+                <HeroBanner onDismiss={dismissHero}
+                  onStart={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))} />
               )}
               {!activeTag && !search && dailyDebate && (() => {
                 const { proP, conP } = pct(dailyDebate.pro, dailyDebate.con);
@@ -870,7 +871,14 @@ export default function App() {
                   [0,1,2].map(i => <SkeletonCard key={i} />)
                 ) : (
                   <>
-                    {visible.length===0 && <div style={{ textAlign:"center", padding:"48px", color:"var(--text-4)", fontSize:15 }}>ディベートが見つかりません</div>}
+                    {visible.length===0 && (
+                      <div style={{ textAlign:"center", padding:"48px 24px" }}>
+                        <p style={{ fontSize:22, fontWeight:800, color:"var(--text)", letterSpacing:-0.4, marginBottom:8 }}>言いたいこと、ないの？</p>
+                        <p style={{ fontSize:13.5, color:"var(--text-3)", marginBottom:18 }}>条件に合うディベートがありません。無いなら、自分で立てよう。</p>
+                        <button onClick={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))}
+                          style={btnPrimary}>ディベートを作る</button>
+                      </div>
+                    )}
                     {visible.map(d=><DebateCard key={d.id} d={d} dispatch={dispatch}/>)}
                   </>
                 )}
