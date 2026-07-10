@@ -400,6 +400,15 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // PCのフォーカスモード: ハンバーガーでサイドバーを隠し、コンテンツに集中（P3-17）
+  const [sidebarHidden, setSidebarHidden] = useState(() =>
+    typeof window !== "undefined" && localStorage.getItem("split-sidebar") === "hidden");
+  const toggleSidebar = () => setSidebarHidden(h => {
+    const next = !h;
+    if (next) localStorage.setItem("split-sidebar", "hidden");
+    else localStorage.removeItem("split-sidebar");
+    return next;
+  });
   const [showAllMine, setShowAllMine] = useState(false); // 参加中の「もっと見る」
   // ナビゲーション時はドロワーを閉じる
   useEffect(() => { setDrawerOpen(false); }, [activeDebate, activeUser, activeAdmin, activeTopic]);
@@ -543,11 +552,12 @@ export default function App() {
         <div style={{ maxWidth:1160, margin:"0 auto", height: isMobile ? "auto" : 56,
           display:"flex", alignItems:"center", padding: isMobile ? "10px 14px" : "0 24px",
           gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-          {isMobile && (
-            <button onClick={()=>setDrawerOpen(true)} title="メニュー" aria-label="メニューを開く"
-              style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
-                cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
-          )}
+          <button onClick={()=> isMobile ? setDrawerOpen(true) : toggleSidebar()}
+            title={isMobile ? "メニュー" : sidebarHidden ? "サイドバーを表示" : "サイドバーを隠してコンテンツに集中"}
+            aria-label={isMobile ? "メニューを開く" : sidebarHidden ? "サイドバーを表示" : "サイドバーを隠す"}
+            style={{ background: !isMobile && sidebarHidden ? "var(--surface-2)" : "none",
+              border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
+              cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
             onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}>
             <div style={{ width:32, height:32, borderRadius:9, overflow:"hidden", display:"flex", flexShrink:0 }}>
@@ -630,8 +640,8 @@ export default function App() {
 
       <div style={{ maxWidth:1160, margin:"0 auto", padding: isMobile ? "16px 14px 40px" : "28px 24px",
         display:"flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 16 : 24 }}>
-        {/* Left sidebar: PCはサイドバー / スマホはハンバーガーで開くドロワー */}
-        {(!isMobile || drawerOpen) && (<>
+        {/* Left sidebar: PCはサイドバー（ハンバーガーで非表示可） / スマホはドロワー */}
+        {((!isMobile && !sidebarHidden) || (isMobile && drawerOpen)) && (<>
           {isMobile && <div onClick={()=>setDrawerOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", zIndex:150 }} />}
           <aside style={ isMobile
             ? { position:"fixed", top:0, left:0, bottom:0, width:280, maxWidth:"82vw", background:"var(--bg)", zIndex:151, padding:"16px 16px 40px", overflowY:"auto", boxShadow:"2px 0 24px rgba(0,0,0,.12)" }
