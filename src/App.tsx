@@ -8,7 +8,7 @@ import {
   Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, Globe,
   ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon,
   Sprout, Brain, Star, Crown, Cpu, Leaf, BookOpen, HeartPulse, Landmark, Clapperboard,
-  Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, Hash,
+  Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, Hash, PanelRightOpen, PanelRightClose,
 } from "lucide-react";
 import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, NEEDS_AUTH, STANCE, POINTS, PRED_AWARD } from "./data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate, isDecided, winnerSide } from "./lib/logic";
@@ -401,13 +401,21 @@ export default function App() {
 
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // PCのフォーカスモード: ハンバーガーでサイドバーを隠し、コンテンツに集中（P3-17）
+  // シンプル第一印象: 左右のレールは既定で非表示（Google的な引き算）。
+  // 開いた選択だけ "shown" として記憶する。
   const [sidebarHidden, setSidebarHidden] = useState(() =>
-    typeof window !== "undefined" && localStorage.getItem("split-sidebar") === "hidden");
+    typeof window === "undefined" ? true : localStorage.getItem("split-sidebar") !== "shown");
   const toggleSidebar = () => setSidebarHidden(h => {
     const next = !h;
-    if (next) localStorage.setItem("split-sidebar", "hidden");
-    else localStorage.removeItem("split-sidebar");
+    localStorage.setItem("split-sidebar", next ? "hidden" : "shown");
+    return next;
+  });
+  // 右レール（人気ユーザー・タグ等）も既定で非表示
+  const [railHidden, setRailHidden] = useState(() =>
+    typeof window === "undefined" ? true : localStorage.getItem("split-rail") !== "shown");
+  const toggleRail = () => setRailHidden(h => {
+    const next = !h;
+    localStorage.setItem("split-rail", next ? "hidden" : "shown");
     return next;
   });
   const [showAllMine, setShowAllMine] = useState(false); // 参加中の「もっと見る」
@@ -554,9 +562,9 @@ export default function App() {
           display:"flex", alignItems:"center", padding: isMobile ? "10px 14px" : "0 24px",
           gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
           <button onClick={()=> isMobile ? setDrawerOpen(true) : toggleSidebar()}
-            title={isMobile ? "メニュー" : sidebarHidden ? "サイドバーを表示" : "サイドバーを隠してコンテンツに集中"}
+            title={isMobile ? "メニュー" : sidebarHidden ? "メニュー（トピック・記録）を表示" : "メニューを隠す"}
             aria-label={isMobile ? "メニューを開く" : sidebarHidden ? "サイドバーを表示" : "サイドバーを隠す"}
-            style={{ background: !isMobile && sidebarHidden ? "var(--surface-2)" : "none",
+            style={{ background: !isMobile && !sidebarHidden ? "var(--surface-2)" : "none",
               border:"1.5px solid var(--border)", borderRadius:10, width:38, height:38,
               cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
@@ -860,7 +868,13 @@ export default function App() {
         </aside>
         </>)}
 
-        <main style={{ flex:1, minWidth:0 }}>
+        <main style={(() => {
+          // 両レールが無い（隠れている/そのページに存在しない）ときは読みやすい幅でセンター寄せ
+          const railHere = !activeDebate && !activeUser && !activeAdmin && !railHidden;
+          const centered = !isMobile && sidebarHidden && !railHere;
+          return { flex:1, minWidth:0, width:"100%",
+            maxWidth: centered ? 860 : undefined, margin: centered ? "0 auto" : undefined };
+        })()}>
           {activeAdmin && adminAllowed ? (
             <AdminPage debates={debates} reports={reports} bannedUsers={bannedUsers} dispatch={dispatch} />
           ) : activeUser ? (
@@ -935,6 +949,14 @@ export default function App() {
                     </button>
                   )}
                   {visible.length} 件のディベート
+                  <button onClick={toggleRail}
+                    title={railHidden ? "人気ユーザー・人気のタグなどを表示" : "人気ユーザー・人気のタグなどを隠す"}
+                    aria-label={railHidden ? "サブ情報を表示" : "サブ情報を隠す"}
+                    style={{ background: railHidden ? "none" : "var(--surface-2)", border:"1px solid var(--border)",
+                      borderRadius:8, width:30, height:30, cursor:"pointer", fontFamily:"inherit",
+                      color:"var(--text-3)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
+                    <Icn icon={railHidden ? PanelRightOpen : PanelRightClose} size={16}/>
+                  </button>
                 </span>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -958,7 +980,7 @@ export default function App() {
           )}
         </main>
 
-        {!activeDebate && !activeUser && !activeAdmin && (
+        {!activeDebate && !activeUser && !activeAdmin && !railHidden && (
           <aside style={ isMobile
             ? { width:"100%", display:"flex", flexDirection:"column", gap:16 }
             : { width:270, flexShrink:0, position:"sticky", top:76, alignSelf:"flex-start", display:"flex", flexDirection:"column", gap:16 } }>
