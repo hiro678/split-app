@@ -274,3 +274,72 @@ begin
   return json_build_object('score', myscore, 'rank', case when myscore > 0 then myrank else null end);
 end;
 $$;
+
+-- ════════════════════════════════════════════════════════════════
+--  P0 修正: 投票のDB同期（1ユーザー1票・サーバ側でカウント更新）
+--   これまで投票はブラウザ内のみで、debates.pro/con に反映されていなかった。
+-- ════════════════════════════════════════════════════════════════
+create table if not exists debate_votes (
+  user_id    uuid   not null references auth.users(id) on delete cascade,
+  debate_id  bigint not null references debates(id) on delete cascade,
+  stance     text   not null check (stance in ('pro','con')),
+  created_at timestamptz default now(),
+  primary key (user_id, debate_id)
+);
+
+alter table debate_votes enable row level security;
+do $$
+begin
+  drop policy if exists "votes_rw" on debate_votes;
+  -- 自分の票のみ読み書き可（集計は debates.pro/con を参照）
+  create policy "votes_rw" on debate_votes for all
+    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+end $$;
+
+-- ── RPC: 投票（同じ立場をもう一度＝取消、逆の立場＝切替。原子的）────
+--  カウント更新はサーバ側で行い、二重投票・改ざんを防ぐ。決着後は拒否。
+create or replace function cast_vote(p_debate_id bigint, p_stance text)
+returns json language plpgsql security definer as $$
+declare
+  uid uuid := auth.uid();
+  d debates%rowtype;
+  cur text;
+  nxt text;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if p_stance not in ('pro','con') then raise exception 'bad stance'; end if;
+  select * into d from debates where id = p_debate_id for update;
+  if not found then return json_build_object('ok', false, 'reason', 'not_found'); end if;
+  if d.status = 'closed'
+     or (d.deadline is not null and d.deadline < extract(epoch from now()) * 1000) then
+    return json_build_object('ok', false, 'reason', 'closed');
+  end if;
+
+  select stance into cur from debate_votes where user_id = uid and debate_id = p_debate_id;
+  if cur = p_stance then
+    delete from debate_votes where user_id = uid and debate_id = p_debate_id;  -- 取消
+    nxt := null;
+  elsif cur is null then
+    insert into debate_votes (user_id, debate_id, stance) values (uid, p_debate_id, p_stance);
+    nxt := p_stance;
+  else
+    update debate_votes set stance = p_stance where user_id = uid and debate_id = p_debate_id;  -- 切替
+    nxt := p_stance;
+  end if;
+
+  -- cur/nxt は NULL があり得るため coalesce 必須（NULL='pro' は NULL になる）
+  update debates set
+    pro = greatest(0, pro + coalesce((nxt = 'pro')::int, 0) - coalesce((cur = 'pro')::int, 0)),
+    con = greatest(0, con + coalesce((nxt = 'con')::int, 0) - coalesce((cur = 'con')::int, 0))
+    where id = p_debate_id;
+  select pro, con into d.pro, d.con from debates where id = p_debate_id;
+  return json_build_object('ok', true, 'stance', nxt, 'pro', d.pro, 'con', d.con);
+end;
+$$;
+
+-- ── RPC: 自分の投票一覧（リロード/別端末でも「投票済み」を復元）──────
+create or replace function my_votes()
+returns table(debate_id bigint, stance text)
+language sql security definer as $$
+  select debate_id, stance from debate_votes where user_id = auth.uid();
+$$;

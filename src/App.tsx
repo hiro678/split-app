@@ -1,6 +1,6 @@
 import { useState, useReducer, useMemo, useContext, createContext, useEffect, useRef, useCallback } from "react";
 import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates,
-  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile, updateAvatar } from "./lib/supabase";
+  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile, updateAvatar, fetchMyVotes } from "./lib/supabase";
 import { INIT_DEBATES } from "./data/seedDebates";
 import {
   ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
@@ -206,6 +206,44 @@ export default function App() {
     })();
     return () => { alive = false; };
   }, []);
+
+  // ── P0: ログイン時に自分の投票を復元（リロード/別端末でも投票済みが残る）──
+  const myVotesRef = useRef<Record<number, "pro" | "con">>({});
+  useEffect(() => {
+    if (!isSupabaseConfigured || !isAuthed || dbStatus !== "connected") return;
+    fetchMyVotes().then(votes => {
+      myVotesRef.current = votes;
+      if (Object.keys(votes).length) rawDispatch({ type: "APPLY_VOTES", votes });
+    });
+  }, [isAuthed, dbStatus]);
+
+  // ── P0: 他ユーザーの投稿・投票を反映（タブ復帰時＋60秒ごとに再取得）──
+  useEffect(() => {
+    if (!isSupabaseConfigured || dbStatus !== "connected") return;
+    let busy = false;
+    const refresh = async () => {
+      if (busy || document.hidden) return;
+      busy = true;
+      try {
+        const rows = await fetchDebates();
+        if (rows && rows.length) {
+          // ローカルの投票ハイライト・保存フラグは維持してDBの数値を取り込む
+          const prev = new Map<number, any>(stateRef.current.debates.map((d: any) => [d.id, d]));
+          const merged = rows.map(d => {
+            const p = prev.get(d.id);
+            return p ? { ...d, userStance: p.userStance ?? myVotesRef.current[d.id] ?? null, saved: p.saved } : d;
+          });
+          rawDispatch({ type: "HYDRATE", debates: merged });
+        }
+      } catch { /* 次回に任せる */ }
+      busy = false;
+    };
+    const onVisible = () => { if (!document.hidden) refresh(); };
+    const iv = setInterval(refresh, 60000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
+  }, [dbStatus]);
 
   // 認証セッションの監視（DBモードのみ）
   useEffect(() => {

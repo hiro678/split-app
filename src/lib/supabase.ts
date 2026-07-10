@@ -45,6 +45,14 @@ export async function updateAvatar(userId, avatar) {
 }
 
 // プロフィール（username / is_admin / avatar）を取得
+// 自分の投票一覧（debateId → stance）。リロード/別端末でも投票済みを復元する。
+export async function fetchMyVotes(): Promise<Record<number, "pro" | "con">> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.rpc("my_votes");
+  if (error) { console.error("[supabase] my_votes", error); return {}; }
+  return Object.fromEntries((data || []).map((r) => [r.debate_id, r.stance]));
+}
+
 export async function fetchProfile(userId) {
   if (!supabase || !userId) return null;
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
@@ -152,6 +160,15 @@ export async function syncAction(action) {
           author: r.author, text: r.body, score: r.score || 0, created_at: r.id, integrity: r.integrity || null,
         }).then(({ error }) => warn("ADD_REPLY")(error));
         await supabase.rpc("increment_comment_count", { d_id: action.debateId }).then(({ error }) => warn("inc_cc")(error));
+        break;
+      }
+      case "SET_STANCE": {
+        // 投票はサーバ側RPCで1ユーザー1票を保証（トグル/切替/取消もサーバが判定）
+        await supabase.rpc("cast_vote", { p_debate_id: action.id, p_stance: action.stance })
+          .then(({ data, error }) => {
+            warn("SET_STANCE")(error);
+            if (!error && data && data.ok === false) console.warn("[supabase] cast_vote rejected:", data.reason);
+          });
         break;
       }
       case "LIKE": {

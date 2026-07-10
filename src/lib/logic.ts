@@ -172,6 +172,9 @@ export const getRelated = (current, all) => {
 export function reducer(state, action) {
   switch (action.type) {
     case "HYDRATE": return { ...state, debates: action.debates };
+    // DBに保存された自分の投票を復元（votes: debateId → "pro"|"con"）
+    case "APPLY_VOTES": return { ...state, debates: state.debates.map(d =>
+      action.votes[d.id] ? { ...d, userStance: action.votes[d.id] } : d) };
     case "SET_STANCE": return { ...state, debates: state.debates.map(d => {
       if (d.id !== action.id || d.status === "closed") return d;
       const prev = d.userStance, next = prev === action.stance ? null : action.stance;
