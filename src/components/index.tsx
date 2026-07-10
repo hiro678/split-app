@@ -13,6 +13,7 @@ import { validateUsername, validateDisplayName } from "../lib/moderation";
 import { getProfileExtras, saveProfileExtras, type ProfileExtras } from "../lib/profile";
 import { fileToAvatarBlob, blobToDataUrl } from "../lib/image";
 import { THEMES } from "../data/themes";
+import { Logo } from "../ui/Logo";
 import { useTypingGuard } from "../lib/integrity";
 import { AVATARS, Avatar } from "../avatars";
 
@@ -1169,7 +1170,7 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
   const onShare = async () => {
     const url = `${location.origin}${location.pathname}#d=${d.id}`;
     if (navigator.share) {
-      try { await navigator.share({ title: d.title, text: `Splitで議論中: ${d.title}`, url }); return; }
+      try { await navigator.share({ title: d.title, text: `Split Viewで議論中: ${d.title}`, url }); return; }
       catch (e: any) { if (e?.name === "AbortError") return; }
     }
     try { await navigator.clipboard.writeText(url); notify?.("リンクをコピーしました"); }
@@ -2052,7 +2053,7 @@ export function GuideModal({ step, onClose, dispatch }: { step?: number; onClose
       <div onClick={e=>e.stopPropagation()}
         style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:560, maxHeight:"84vh", overflowY:"auto", padding:"26px 28px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-          <h3 style={{ fontWeight:800, fontSize:20, color:"var(--text)" }}>Splitの歩き方</h3>
+          <h3 style={{ fontWeight:800, fontSize:20, color:"var(--text)" }}>Split Viewの歩き方</h3>
           <button onClick={onClose} title="閉じる" aria-label="ガイドを閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
         </div>
         <p style={{ fontSize:13, color:"var(--text-3)", marginBottom:16 }}>賛成か、反対か。あらゆるテーマの賛否がぶつかり合う討論の広場です。</p>
@@ -2105,7 +2106,7 @@ export function HeroBanner({ onDismiss, onStart, onGuide }: { onDismiss: () => v
         君の思いを、世界にぶつけよう。
       </h2>
       <p style={{ fontSize:14, color:"var(--text-2)", lineHeight:1.7, marginBottom:14, maxWidth:560 }}>
-        賛成か、反対か。Splitは、あらゆるテーマの賛否がぶつかり合う討論の広場。
+        賛成か、反対か。Split Viewは、あらゆるテーマの賛否がぶつかり合う討論の広場。
         観るだけでも面白い。参加すれば、もっと面白い。
       </p>
       {onStart && (
@@ -2293,9 +2294,7 @@ export function AuthModal({ onClose, notify }) {
       <div onClick={e=>e.stopPropagation()}
         style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:400, padding:28, display:"flex", flexDirection:"column", gap:14 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:30, height:30, borderRadius:8, overflow:"hidden", display:"flex", flexShrink:0 }}>
-            <div style={{ flex:1, background:STANCE.pro.bar }} /><div style={{ flex:1, background:STANCE.con.bar }} />
-          </div>
+          <Logo size={30} />
           <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>{mode === "verify" ? "メールを確認してください" : isSignup ? "新規登録" : "ログイン"}</h3>
           <button onClick={onClose} title="閉じる" aria-label="閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
         </div>

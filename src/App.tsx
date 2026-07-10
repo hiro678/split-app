@@ -14,6 +14,7 @@ import { TOPICS, BADGES, USER_REP, RANK_PERKS, REPORT_REASONS, ADMIN_PASSCODE, N
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, computeMyRep, perkOf, fmt, ago, timeLeft, pct, getRelated, reducer, pointsForAction, popularTags, pickDailyDebate, isDecided, winnerSide } from "./lib/logic";
 import { getDailyOverride } from "./lib/daily";
 import { THEMES, themeById } from "./data/themes";
+import { Logo } from "./ui/Logo";
 import {
   getPredictions, setPrediction as savePrediction, resolvePending, predictionStats,
   type PredSide, type PredRow, type PredStats,
@@ -560,15 +561,10 @@ export default function App() {
               cursor:"pointer", fontFamily:"inherit", flexShrink:0, color:"var(--text-2)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}><Icn icon={Menu} size={20}/></button>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}
             onClick={()=>dispatch({type:"SET_ACTIVE",debate:null})}>
-            <div style={{ width:32, height:32, borderRadius:9, overflow:"hidden", display:"flex", flexShrink:0 }}>
-              <div style={{ flex:1, background:STANCE.pro.bar, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <span style={{ color:"#fff", fontWeight:900, fontSize:13 }}>S</span>
-              </div>
-              <div style={{ flex:1, background:STANCE.con.bar, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <span style={{ color:"#fff", fontWeight:900, fontSize:13 }}>p</span>
-              </div>
-            </div>
-            <span className="wordmark" style={{ fontWeight:700, fontSize:22, letterSpacing:-0.5, color:"var(--text)" }}>Split</span>
+            <Logo size={32} />
+            <span className="wordmark" style={{ fontWeight:700, fontSize:22, letterSpacing:-0.5, color:"var(--text)", whiteSpace:"nowrap" }}>
+              Split <span style={{ color:"var(--text-3)" }}>View</span>
+            </span>
             {!isMobile && <span style={{ fontSize:10, background:STANCE.pro.bg, color:STANCE.pro.color, padding:"1px 7px", borderRadius:99, fontWeight:700 }}>β</span>}
             {(() => {
               const m = { local:["ローカル","var(--text-3)","var(--surface-3)"], loading:["接続中","#b45309","var(--amber-bg)"], connected:["接続済み","#16a34a","var(--green-bg)"], error:["接続エラー","#dc2626","#fee2e2"] }[dbStatus];
@@ -935,7 +931,7 @@ export default function App() {
                     <button onClick={restoreHero} title="はじめての方向けの説明を再表示"
                       style={{ background:"none", border:"1px dashed var(--border-2)", borderRadius:99, padding:"3px 10px",
                         fontSize:12, fontWeight:700, color:"var(--text-3)", cursor:"pointer", fontFamily:"inherit" }}>
-                      Splitとは？
+                      Split Viewとは？
                     </button>
                   )}
                   {visible.length} 件のディベート
@@ -1010,7 +1006,7 @@ export default function App() {
             )}
 
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
-              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Splitとは</h4>
+              <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Split Viewとは</h4>
               {([[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]] as [any, string, string][]).map(([icon,t,desc],i)=>(
                 <button key={t} onClick={()=>setGuide({ step: i })} title="クリックで詳しい説明を見る"
                   style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start", width:"100%", textAlign:"left",

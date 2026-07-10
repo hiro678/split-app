@@ -7,6 +7,7 @@
 const RESERVED = [
   "admin", "administrator", "root", "system", "official", "support",
   "staff", "mod", "moderator", "split", "splitofficial", "team",
+  "splitview", "splitviewofficial", "split_view",
   "anonymous", "null", "undefined", "guest", "me", "you", "user",
   "あなた",
 ];
@@ -59,7 +60,7 @@ const JP_BANNED = [
   "在日死", "劣等民族", "皆殺",
 ];
 // なりすまし防止（表示名の完全一致・空白除去後）
-const JP_RESERVED = ["運営", "管理者", "公式", "スプリット公式", "split公式", "サポート"];
+const JP_RESERVED = ["運営", "管理者", "公式", "スプリット公式", "split公式", "splitview公式", "スプリットビュー公式", "サポート"];
 
 /**
  * 表示名を検証。問題があればエラーメッセージ、なければ null を返す。
