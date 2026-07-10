@@ -378,6 +378,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
   const [replyingStance, setReplyingStance] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [quoteOf, setQuoteOf] = useState<any>(null); // 引用返信の対象バブル
   const overQuota = myUsage(debates, me).comments >= perkOf(myRep).comments;
   const guard = useTypingGuard(notify);
   const mentionUsers = useMemo(() => mentionableUsers(debates), [debates]);
@@ -389,13 +390,22 @@ export function Thread({ comment, debateId, dispatch, locked }) {
   // root + 表示する返信を時系列順にフラットな配列に
   const flow = [{ ...comment, isRoot: true }, ...shown];
 
+  // バブルの「引用返信」→ 引用チップ付きでコンポーザーを開く（既定は逆の立場＝反論）
+  const startQuoteReply = (b, rowNum) => {
+    setQuoteOf({ id: b.id, author: b.author, stance: b.stance,
+      excerpt: (b.body || "").slice(0, 60), rowNum });
+    if (!replyingStance) setReplyingStance(b.stance === "pro" ? "con" : "pro");
+    if (rowNum > REPLY_LIMIT) setExpanded(true); // 折りたたみ内の引用元が見えるように
+  };
+
   const submitReply = () => {
     if (!replyText.trim() || !replyingStance || overQuota) return;
     dispatch({ type:"ADD_REPLY", debateId, commentId:comment.id, stance:comment.stance,
-      reply:{ id:Date.now(), author:me, stance:replyingStance, body:replyText.trim(), score:1, vote:1, integrity: guard.snapshot(replyText.trim().length) }
+      reply:{ id:Date.now(), author:me, stance:replyingStance, body:replyText.trim(), score:1, vote:1,
+        quote: quoteOf || null, integrity: guard.snapshot(replyText.trim().length) }
     });
     guard.reset();
-    setReplyText(""); setReplyingStance(null);
+    setReplyText(""); setReplyingStance(null); setQuoteOf(null);
   };
 
   const rootSt = STANCE[comment.stance];
@@ -417,6 +427,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
             rootCommentId={comment.id}
             rootStance={comment.stance}
             locked={locked}
+            onQuote={startQuoteReply}
           />
         ))}
       </div>
@@ -460,6 +471,21 @@ export function Thread({ comment, debateId, dispatch, locked }) {
               <p style={{ fontSize:11, fontWeight:700, color:STANCE[replyingStance].color, marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
                 <Icn icon={STANCE[replyingStance].Icon} size={13}/> {STANCE[replyingStance].label}として返信
               </p>
+              {quoteOf && (
+                <div style={{ display:"flex", alignItems:"flex-start", gap:6, background:"var(--surface)",
+                  borderLeft:`3px solid ${STANCE[quoteOf.stance].color}`, borderRadius:"4px 8px 8px 4px",
+                  padding:"6px 8px", marginBottom:7 }}>
+                  <Icn icon={CornerUpLeft} size={12} style={{ color:"var(--text-4)", marginTop:2 }}/>
+                  <p style={{ flex:1, fontSize:11.5, color:"var(--text-3)", lineHeight:1.5, minWidth:0 }}>
+                    <strong style={{ color:STANCE[quoteOf.stance].color }}>#{quoteOf.rowNum} @{quoteOf.author}</strong>
+                    <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{quoteOf.excerpt}{quoteOf.excerpt.length >= 60 ? "…" : ""}</span>
+                  </p>
+                  <button onClick={()=>setQuoteOf(null)} title="引用を外す" aria-label="引用を外す"
+                    style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", padding:0, display:"inline-flex" }}>
+                    <Icn icon={X} size={13}/>
+                  </button>
+                </div>
+              )}
               <MentionTextarea value={replyText} onChange={setReplyText} users={mentionUsers} rows={2} {...guard.bind}
                 onKeyDown={(e: any) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); submitReply(); } }}
                 placeholder="あなたの意見を書く…（@でメンション / ⌘Enterで送信）"
@@ -472,7 +498,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
                   返信する
                 </button>
                 {overQuota && <span style={{ fontSize:11, color:STANCE.con.color, fontWeight:600, alignSelf:"center" }}>今月のコメント上限に達しました</span>}
-                <button onClick={()=>{setReplyingStance(null); setReplyText("");}}
+                <button onClick={()=>{setReplyingStance(null); setReplyText(""); setQuoteOf(null);}}
                   style={{ background:"none", border:"1px solid var(--border)", borderRadius:99,
                     padding:"5px 14px", fontSize:12, fontWeight:700, cursor:"pointer", color:"var(--text-2)", fontFamily:"inherit" }}>
                   キャンセル
@@ -487,14 +513,14 @@ export function Thread({ comment, debateId, dispatch, locked }) {
 }
 
 // ── 1行 = 1バブル: 立場で左カラム(Pros)か右カラム(Cons)のどちらかに配置 ──
-export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCommentId, rootStance, locked }) {
+export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCommentId, rootStance, locked, onQuote }) {
   const st = STANCE[bubble.stance] || STANCE.pro;
   const isPro = bubble.stance === "pro";
   const isRebuttal = prevBubble && prevBubble.stance !== bubble.stance;
   const likeInfo = { debateId, commentId: rootCommentId, replyId: isRoot ? null : bubble.id, stance: rootStance };
 
-  // 接続ヒント: 前の発言に対する反論 or 補強
-  const connector = !isRoot && (
+  // 接続ヒント: 前の発言に対する反論 or 補強（引用がある場合は引用ボックスが役割を担う）
+  const connector = !isRoot && !bubble.quote && (
     <div style={{
       display:"flex",
       justifyContent: isPro ? "flex-start" : "flex-end",
@@ -518,22 +544,31 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCo
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, alignItems:"start" }}>
         {/* 左カラム (Pros) */}
         <div style={{ minWidth:0 }}>
-          {isPro && <BubbleContent bubble={bubble} rowNum={rowNum} isRoot={isRoot} st={st} isPro likeInfo={likeInfo} locked={locked} />}
+          {isPro && <BubbleContent bubble={bubble} rowNum={rowNum} isRoot={isRoot} st={st} isPro likeInfo={likeInfo} locked={locked} onQuote={onQuote} />}
         </div>
         {/* 右カラム (Cons) */}
         <div style={{ minWidth:0 }}>
-          {!isPro && <BubbleContent bubble={bubble} rowNum={rowNum} isRoot={isRoot} st={st} isPro={false} likeInfo={likeInfo} locked={locked} />}
+          {!isPro && <BubbleContent bubble={bubble} rowNum={rowNum} isRoot={isRoot} st={st} isPro={false} likeInfo={likeInfo} locked={locked} onQuote={onQuote} />}
         </div>
       </div>
     </div>
   );
 }
 
-export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked }) {
+export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked, onQuote }) {
   const { dispatch, me, myAvatar, isAuthed } = useContext(AppContext);
   const liked = bubble.vote === 1;
+  // 引用元へスクロール＋一瞬ハイライト
+  const jumpToQuoted = (id) => {
+    const el = document.getElementById(`bubble-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.style.transition = "box-shadow .3s";
+    el.style.boxShadow = "0 0 0 3px var(--border-2)";
+    setTimeout(() => { el.style.boxShadow = "none"; }, 1200);
+  };
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+    <div id={`bubble-${bubble.id}`} style={{ display:"flex", flexDirection:"column", gap:4, borderRadius:12 }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:4, flexWrap:"wrap",
         flexDirection: isPro ? "row" : "row-reverse" }}>
@@ -562,6 +597,15 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
               color: liked ? "#e11d48" : "var(--text-4)", fontSize:10, fontWeight:700 }}>
             <Icn icon={Heart} size={12} fill={liked ? "currentColor" : "none"}/>{fmt(bubble.score)}
           </button>
+          {!locked && onQuote && (
+            <button onClick={()=>onQuote(bubble, rowNum)}
+              title="この発言を引用して返信"
+              style={{ display:"flex", alignItems:"center", gap:3, background:"none", border:"1px solid transparent",
+                borderRadius:99, padding:"1px 7px", cursor:"pointer", fontFamily:"inherit",
+                color:"var(--text-4)", fontSize:10, fontWeight:700 }}>
+              <Icn icon={CornerUpLeft} size={12}/>返信
+            </button>
+          )}
           <button onClick={()=>dispatch({type:"OPEN_REPORT",target:{kind:"comment",label:`@${bubble.author} のコメント`}})}
             title={isAuthed ? "通報" : "通報にはログインが必要です"}
             style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"inline-flex",
@@ -590,6 +634,23 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
         }}>
           #{rowNum}{isRoot ? " 起点" : ""}
         </span>
+        {/* Teams風の引用: どの発言への返信かを明示（クリックで元へジャンプ） */}
+        {bubble.quote && (
+          <button onClick={()=>jumpToQuoted(bubble.quote.id)}
+            title="引用元へ移動"
+            style={{ display:"flex", alignItems:"flex-start", gap:5, width:"100%", textAlign:"left",
+              background:"var(--surface)", border:"none", cursor:"pointer", fontFamily:"inherit",
+              borderLeft:`3px solid ${(STANCE[bubble.quote.stance]||st).color}`,
+              borderRadius:"3px 8px 8px 3px", padding:"5px 8px", marginBottom:7, opacity:0.9 }}>
+            <Icn icon={CornerUpLeft} size={11} style={{ color:"var(--text-4)", marginTop:2, flexShrink:0 }}/>
+            <span style={{ minWidth:0, fontSize:11, color:"var(--text-3)", lineHeight:1.5 }}>
+              <strong style={{ color:(STANCE[bubble.quote.stance]||st).color }}>#{bubble.quote.rowNum} @{bubble.quote.author}</strong>
+              <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {bubble.quote.excerpt}{(bubble.quote.excerpt||"").length >= 60 ? "…" : ""}
+              </span>
+            </span>
+          </button>
+        )}
         {renderBody(bubble.body, dispatch)}
       </div>
     </div>

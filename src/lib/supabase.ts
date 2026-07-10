@@ -74,6 +74,7 @@ export async function fetchDebates() {
   for (const r of replies || []) {
     (repliesByComment[r.comment_id] ||= []).push({
       id: r.id, author: r.author, body: r.text, stance: r.stance || "pro", score: r.score || 0, vote: 0, integrity: r.integrity || null,
+      quote: r.quote || null,
     });
   }
   for (const arr of Object.values(repliesByComment)) arr.sort((a, b) => a.id - b.id);
@@ -158,6 +159,7 @@ export async function syncAction(action) {
         await supabase.from("replies").insert({
           id: r.id, comment_id: action.commentId, stance: r.stance,
           author: r.author, text: r.body, score: r.score || 0, created_at: r.id, integrity: r.integrity || null,
+          quote: r.quote || null,
         }).then(({ error }) => warn("ADD_REPLY")(error));
         await supabase.rpc("increment_comment_count", { d_id: action.debateId }).then(({ error }) => warn("inc_cc")(error));
         break;

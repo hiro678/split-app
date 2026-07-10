@@ -343,3 +343,9 @@ returns table(debate_id bigint, stance text)
 language sql security definer as $$
   select debate_id, stance from debate_votes where user_id = auth.uid();
 $$;
+
+-- ════════════════════════════════════════════════════════════════
+--  P1-3: 返信の引用（Teams風）— どの発言への返信かを保存
+--   quote = { id, author, stance, excerpt, rowNum }
+-- ════════════════════════════════════════════════════════════════
+alter table replies add column if not exists quote jsonb;
