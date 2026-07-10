@@ -1974,7 +1974,68 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 // ─── Shared styles は src/styles.js に分離 ─────────────────────────
 
 // ─── Hero（初見向け説明バナー） ───────────────────────────────────
-export function HeroBanner({ onDismiss, onStart }) {
+// ─── P3-13: 使い方ガイド（Splitとは？の詳細）───────────────────────
+//  ヒーロー/サイドバーのステップをクリックすると該当セクションへ。
+//  「こんな人はここから」で目的別に一覧のソートへ直行できる。
+export function GuideModal({ step, onClose, dispatch }: { step?: number; onClose: () => void; dispatch: any }) {
+  const sections = [
+    { Icon: Target, t: "1. テーマを選ぶ", body: "左のトピックや #タグ、検索から気になる論題を探せます。毎日ホームに出る「今日の論題」から入るのが手軽。締切が近いものは賛否が動きやすく、参加のしがいがあります。" },
+    { Icon: ThumbsUp, t: "2. 立場を表明", body: "賛成か反対かを1票で表明。締切までは何度でも変えられます（同じ側をもう一度押すと取消）。良い意見を読んで考えが変わるのは、恥ずかしいことではなく良い議論の証です。" },
+    { Icon: MessageCircle, t: "3. 根拠を語る", body: "コメントは賛成が左・反対が右に並びます。相手の発言は「↩返信」で引用しながら反論できます。出典URLの貼り付けはOK、それ以外のコピペは不可（手打ちの真剣勝負）。投票と、個々のコメントへのいいねは別。反対派でも良い賛成意見にいいねしていい。" },
+    { Icon: BarChart3, t: "4. 分布を見る", body: "賛否バーはリアルタイムで動きます。締切時点でどちらが多数派になるかを「結果予想」しておくと、的中で +15XP。予想は自分の投票と独立なので、冷静な分析が武器になります。" },
+    { Icon: Trophy, t: "5. 決着を見る", body: "締切が来ると決着。多数派とあなたの予想の的中/外れが確定し、プロフィールの「予想的中率」に積み上がります。参加した議論の決着はベル（通知）に届きます。" },
+  ];
+  const jump = (sort: string) => { dispatch({ type: "SET_TOPIC", id: null }); dispatch({ type: "SET_SORT", sort }); onClose(); window.scrollTo({ top: 0 }); };
+  const personas: [string, string, string][] = [
+    ["🔥", "熱い討論（レスバ）がしたい", "discussion"],
+    ["🏁", "決着済みの議論だけ見たい", "decided"],
+    ["🎯", "予想を当てて遊びたい", "closing"],
+  ];
+  useEffect(() => {
+    if (step == null) return;
+    setTimeout(() => document.getElementById(`guide-step-${step}`)?.scrollIntoView({ block: "start", behavior: "smooth" }), 60);
+  }, [step]);
+  return (
+    <div onClick={onClose}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:350, padding:16 }}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"var(--surface)", borderRadius:16, width:"100%", maxWidth:560, maxHeight:"84vh", overflowY:"auto", padding:"26px 28px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+          <h3 style={{ fontWeight:800, fontSize:20, color:"var(--text)" }}>Splitの歩き方</h3>
+          <button onClick={onClose} title="閉じる" aria-label="ガイドを閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
+        </div>
+        <p style={{ fontSize:13, color:"var(--text-3)", marginBottom:16 }}>賛成か、反対か。あらゆるテーマの賛否がぶつかり合う討論の広場です。</p>
+
+        <div style={{ background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 14px", marginBottom:18 }}>
+          <p style={{ fontSize:12, fontWeight:800, color:"var(--text-2)", marginBottom:8 }}>こんな人はここから</p>
+          {personas.map(([emoji, label, sort]) => (
+            <button key={sort} onClick={()=>jump(sort)}
+              style={{ display:"flex", alignItems:"center", gap:8, width:"100%", textAlign:"left", padding:"8px 10px",
+                background:"var(--surface)", border:"1px solid var(--border)", borderRadius:9, cursor:"pointer",
+                fontFamily:"inherit", fontSize:13, fontWeight:700, color:"var(--text-2)", marginBottom:6 }}>
+              <span>{emoji}</span><span style={{ flex:1 }}>{label}</span><span style={{ color:STANCE.pro.color }}>→</span>
+            </button>
+          ))}
+        </div>
+
+        {sections.map((s, i) => (
+          <div key={s.t} id={`guide-step-${i}`} style={{ marginBottom:16, scrollMarginTop:8 }}>
+            <p style={{ fontSize:14, fontWeight:800, color:"var(--text)", display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+              <Icn icon={s.Icon} size={16} style={{ color:"var(--text-3)" }}/> {s.t}
+            </p>
+            <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.8 }}>{s.body}</p>
+          </div>
+        ))}
+
+        <p style={{ fontSize:12, color:"var(--text-4)", lineHeight:1.7, borderTop:"1px solid var(--border)", paddingTop:12 }}>
+          投稿・コメント・いいねでスコアが貯まり、ランクが上がるとアイコンや作成枠が解放されます。連続記録・今日のミッション・週間リーグはサイドバーで確認できます。
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function HeroBanner({ onDismiss, onStart, onGuide }: { onDismiss: () => void; onStart?: () => void; onGuide?: (step: number) => void }) {
   const steps = [
     { Icon: Target, t: "テーマを選ぶ", d: "賛否を問える話題を探す" },
     { Icon: ThumbsUp, t: "立場を表明", d: "賛成 / 反対を選ぶ" },
@@ -2003,15 +2064,17 @@ export function HeroBanner({ onDismiss, onStart }) {
       )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:10 }}>
         {steps.map((s, i) => (
-          <div key={s.t} style={{ display:"flex", alignItems:"flex-start", gap:8, background:"var(--surface)",
-            border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px", minWidth:0 }}>
+          <button key={s.t} onClick={()=>onGuide?.(i)} title="クリックで詳しい説明を見る"
+            style={{ display:"flex", alignItems:"flex-start", gap:8, background:"var(--surface)", textAlign:"left",
+              border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px", minWidth:0,
+              cursor: onGuide ? "pointer" : "default", fontFamily:"inherit" }}>
             <span style={{ fontSize:11, fontWeight:800, color:"var(--text-4)", flexShrink:0, marginTop:1 }}>{i+1}</span>
             <Icn icon={s.Icon} size={16} style={{ color:"var(--text-3)", marginTop:1 }}/>
             <div style={{ minWidth:0 }}>
               <p style={{ fontSize:12.5, fontWeight:700, color:"var(--text)" }}>{s.t}</p>
               <p style={{ fontSize:11, color:"var(--text-3)", lineHeight:1.4 }}>{s.d}</p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
       <p style={{ fontSize:11, color:"var(--text-4)", marginTop:12, display:"flex", alignItems:"center", gap:5 }}>

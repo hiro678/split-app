@@ -29,7 +29,7 @@ import { btnPrimary, btnGhost, cActBtn, labelStyle, menuItem, inputStyle, replyB
 
 import { Icn } from "./ui/Icn";
 import {
-  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal, NotificationBell
+  StanceBar, StancePicker, StanceBadge, UserBadge, StatusBadge, VoteHistoryGraph, AISummary, Thread, BubbleRow, BubbleContent, SplitComments, RelatedDebates, UserPage, DebateDetail, DebateCard, NewDebateModal, ReportModal, AdminPage, HeroBanner, SkeletonCard, Toast, AdminGateModal, AuthModal, LevelUpModal, NotificationBell, GuideModal
 } from "./components";
 import { buildNotifications } from "./lib/notifications";
 import { getLeaderboard, getMyWeekly, weekBounds, type LeagueRow, type MyWeekly } from "./lib/league";
@@ -303,7 +303,9 @@ export default function App() {
     .filter(d => !activeTopic || d.topicId===activeTopic)
     .filter(d => !activeTag || (d.tags||[]).includes(activeTag))
     .filter(d => { const q=search.toLowerCase(); return !q||d.title.toLowerCase().includes(q)||d.description.toLowerCase().includes(q)||(d.tags||[]).some(t=>t.toLowerCase().includes(q)); })
+    .filter(d => sort!=="decided" || isDecided(d)) // 「決着済み」は結果が出たものだけ
     .sort((a,b) => {
+      if (sort==="decided") return (b.deadline||0)-(a.deadline||0); // 新しく決着した順
       // active が先、closed が後
       if (a.status !== b.status) return a.status === "closed" ? 1 : -1;
       if (sort==="hot") return (b.pro+b.con)-(a.pro+a.con);
@@ -441,6 +443,9 @@ export default function App() {
   const [heroDismissed, setHeroDismissed] = useState(() =>
     typeof window !== "undefined" && localStorage.getItem("split-hero") === "closed");
   const dismissHero = () => { setHeroDismissed(true); localStorage.setItem("split-hero", "closed"); };
+  const restoreHero = () => { setHeroDismissed(false); localStorage.removeItem("split-hero"); };
+  // 使い方ガイド（Splitとは？の詳細モーダル。step指定で該当節へスクロール）
+  const [guide, setGuide] = useState<{ step?: number } | null>(null);
 
   const isLoading = dbStatus === "loading";
   const isHome = !activeAdmin && !activeUser && !liveDebate;
@@ -860,7 +865,8 @@ export default function App() {
             <>
               {!heroDismissed && !activeTag && !search && (
                 <HeroBanner onDismiss={dismissHero}
-                  onStart={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))} />
+                  onStart={()=> isAuthed ? dispatch({type:"TOGGLE_NEW"}) : (setAuthOpen(true), notify("ログインが必要です","con"))}
+                  onGuide={(i)=>setGuide({ step: i })} />
               )}
               {!activeTag && !search && dailyDebate && (() => {
                 const { proP, conP } = pct(dailyDebate.pro, dailyDebate.con);
@@ -907,14 +913,23 @@ export default function App() {
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 14px",
                 display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                  {([["hot",Flame,"人気"],["new",Sparkles,"新着"],["closing",Clock,"締切間近"],["discussion",MessageCircle,"議論中"]] as [string, any, string][]).map(([s,icon,l])=>(
+                  {([["hot",Flame,"人気"],["new",Sparkles,"新着"],["closing",Clock,"締切間近"],["discussion",MessageCircle,"議論中"],["decided",Trophy,"決着済み"]] as [string, any, string][]).map(([s,icon,l])=>(
                     <button key={s} onClick={()=>dispatch({type:"SET_SORT",sort:s})}
                       style={{ padding:"6px 12px", borderRadius:99, border:"none",
                         background:sort===s?STANCE.pro.bg:"none", color:sort===s?STANCE.pro.color:"var(--text-3)",
                         fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", transition:"all .1s", display:"inline-flex", alignItems:"center", gap:5 }}><Icn icon={icon} size={14}/>{l}</button>
                   ))}
                 </div>
-                <span style={{ fontSize:13, color:"var(--text-4)" }}>{visible.length} 件のディベート</span>
+                <span style={{ fontSize:13, color:"var(--text-4)", display:"inline-flex", alignItems:"center", gap:10 }}>
+                  {heroDismissed && !activeTag && !search && (
+                    <button onClick={restoreHero} title="はじめての方向けの説明を再表示"
+                      style={{ background:"none", border:"1px dashed var(--border-2)", borderRadius:99, padding:"3px 10px",
+                        fontSize:12, fontWeight:700, color:"var(--text-3)", cursor:"pointer", fontFamily:"inherit" }}>
+                      Splitとは？
+                    </button>
+                  )}
+                  {visible.length} 件のディベート
+                </span>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
                 {isLoading ? (
@@ -986,12 +1001,19 @@ export default function App() {
 
             <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:16 }}>
               <h4 style={{ fontWeight:700, fontSize:14, marginBottom:12, color:"var(--text)", display:"flex", alignItems:"center", gap:6 }}><Icn icon={Sparkles} size={16}/> Splitとは</h4>
-              {([[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]] as [any, string, string][]).map(([icon,t,desc])=>(
-                <div key={t} style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start" }}>
+              {([[Target,"テーマを選ぶ","賛否を問えるトピックを探す"],[ThumbsUp,"立場を表明","賛成か反対かを明確にする"],[MessageCircle,"根拠を語る","なぜそう思うかをコメントで"],[BarChart3,"分布を見る","リアルタイムで賛否が動く"],[Trophy,"決着を見る","期間終了で勝敗が確定"]] as [any, string, string][]).map(([icon,t,desc],i)=>(
+                <button key={t} onClick={()=>setGuide({ step: i })} title="クリックで詳しい説明を見る"
+                  style={{ display:"flex", gap:10, marginBottom:10, alignItems:"flex-start", width:"100%", textAlign:"left",
+                    background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit" }}>
                   <Icn icon={icon} size={16} style={{ marginTop:2, color:"var(--text-3)" }}/>
                   <div><p style={{ fontSize:13, fontWeight:600, color:"var(--text)" }}>{t}</p><p style={{ fontSize:12, color:"var(--text-3)" }}>{desc}</p></div>
-                </div>
+                </button>
               ))}
+              <button onClick={()=>setGuide({})}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit",
+                  fontSize:12.5, fontWeight:700, color:STANCE.pro.color }}>
+                詳しいガイドを見る →
+              </button>
             </div>
 
             {/* Badge guide */}
@@ -1034,6 +1056,7 @@ export default function App() {
       {reportTarget && <ReportModal target={reportTarget} dispatch={dispatch} />}
       {adminPrompt && <AdminGateModal onSubmit={submitAdminCode} onClose={()=>{ setAdminPrompt(false); if (window.location.hash === "#admin") history.replaceState(null,"",window.location.pathname); }} />}
       {authOpen && <AuthModal onClose={()=>setAuthOpen(false)} notify={notify} />}
+      {guide && <GuideModal step={guide.step} onClose={()=>setGuide(null)} dispatch={dispatch} />}
       {toast && <Toast toast={toast} />}
       {xpPop && (
         <div key={xpPop.id} aria-hidden="true"
