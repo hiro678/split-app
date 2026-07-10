@@ -458,10 +458,11 @@ export default function App() {
   };
 
   // ── ヒーロー（初見向け説明）の表示状態 ──
+  // ヒーローは毎回表示がデフォルト。❌はそのセッション中だけ有効（次の訪問で復活）
   const [heroDismissed, setHeroDismissed] = useState(() =>
-    typeof window !== "undefined" && localStorage.getItem("split-hero") === "closed");
-  const dismissHero = () => { setHeroDismissed(true); localStorage.setItem("split-hero", "closed"); };
-  const restoreHero = () => { setHeroDismissed(false); localStorage.removeItem("split-hero"); };
+    typeof window !== "undefined" && sessionStorage.getItem("split-hero") === "closed");
+  const dismissHero = () => { setHeroDismissed(true); sessionStorage.setItem("split-hero", "closed"); };
+  const restoreHero = () => { setHeroDismissed(false); sessionStorage.removeItem("split-hero"); };
   // 使い方ガイド（Splitとは？の詳細モーダル。step指定で該当節へスクロール）
   const [guide, setGuide] = useState<{ step?: number } | null>(null);
 
@@ -950,12 +951,13 @@ export default function App() {
                   )}
                   {visible.length} 件のディベート
                   <button onClick={toggleRail}
-                    title={railHidden ? "人気ユーザー・人気のタグなどを表示" : "人気ユーザー・人気のタグなどを隠す"}
+                    title={railHidden ? "人気ユーザー・人気のタグ・ランク一覧を表示" : "人気情報を隠す"}
                     aria-label={railHidden ? "サブ情報を表示" : "サブ情報を隠す"}
                     style={{ background: railHidden ? "none" : "var(--surface-2)", border:"1px solid var(--border)",
-                      borderRadius:8, width:30, height:30, cursor:"pointer", fontFamily:"inherit",
-                      color:"var(--text-3)", display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
-                    <Icn icon={railHidden ? PanelRightOpen : PanelRightClose} size={16}/>
+                      borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
+                      color:"var(--text-3)", display:"inline-flex", alignItems:"center", gap:5 }}>
+                    <Icn icon={railHidden ? PanelRightOpen : PanelRightClose} size={15}/>
+                    人気情報
                   </button>
                 </span>
               </div>

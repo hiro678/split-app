@@ -2110,8 +2110,9 @@ export function HeroBanner({ onDismiss, onStart, onGuide }: { onDismiss: () => v
         観るだけでも面白い。参加すれば、もっと面白い。
       </p>
       {onStart && (
-        <button onClick={onStart} style={{ ...btnPrimary, marginBottom:16, padding:"10px 26px", fontSize:14.5 }}>
-          言いたいことがある
+        <button onClick={onStart} className="wordmark"
+          style={{ ...btnPrimary, marginBottom:16, padding:"10px 26px", fontSize:15, letterSpacing:0.2 }}>
+          Make your case →
         </button>
       )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:10 }}>
