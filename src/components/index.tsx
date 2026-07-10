@@ -1814,6 +1814,13 @@ function DailyTopicAdmin({ debates }) {
 export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
   const [tab, setTab] = useState("debates");
   const openReports = reports.filter(r => r.status === "open").length;
+  // 期限変更（P3-16）: 編集中の行と datetime-local 値
+  const [dlEdit, setDlEdit] = useState<{ id: number; value: string } | null>(null);
+  const toLocalInput = (ms: number) => {
+    const d = new Date(ms || Date.now());
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
 
   // 全ユーザーを集計
   const users = useMemo(() => {
@@ -1880,15 +1887,44 @@ export function AdminPage({ debates, reports, bannedUsers, dispatch }) {
 
       {tab==="debates" && (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {debates.map(d => (
-            <div key={d.id} style={{ ...card, display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
-                <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>@{d.author} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={MessageCircle} size={12}/>{d.commentCount}</span> ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsUp} size={12}/>{d.pro}</span> <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsDown} size={12}/>{d.con}</span></p>
+          {debates.map(d => {
+            const decided = isDecided(d);
+            const editingDl = dlEdit?.id === d.id;
+            return (
+            <div key={d.id} style={{ ...card }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</p>
+                  <p style={{ fontSize:12, color:"var(--text-4)", display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>@{d.author} ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={MessageCircle} size={12}/>{d.commentCount}</span> ・ <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsUp} size={12}/>{d.pro}</span> <span style={{display:"inline-flex",alignItems:"center",gap:3}}><Icn icon={ThumbsDown} size={12}/>{d.con}</span>
+                    ・ <span style={{ color: decided ? STANCE.con.color : "var(--text-3)", fontWeight:600, display:"inline-flex", alignItems:"center", gap:3 }}>
+                      <Icn icon={Clock} size={12}/>{decided ? "決着済み" : timeLeft(d.deadline) || "—"}（{new Date(d.deadline).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}）
+                    </span>
+                  </p>
+                </div>
+                <button onClick={()=> setDlEdit(editingDl ? null : { id: d.id, value: toLocalInput(d.deadline) })}
+                  style={{ background:"var(--surface-2)", color:"var(--text-2)", border:"1px solid var(--border)", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>期限変更</button>
+                <button onClick={()=>{ if(confirm(`「${d.title}」を削除しますか？`)) dispatch({type:"ADMIN_DELETE_DEBATE",id:d.id}); }} style={delBtn}>削除</button>
               </div>
-              <button onClick={()=>{ if(confirm(`「${d.title}」を削除しますか？`)) dispatch({type:"ADMIN_DELETE_DEBATE",id:d.id}); }} style={delBtn}>削除</button>
+              {editingDl && (
+                <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginTop:10, paddingTop:10, borderTop:"1px dashed var(--border)" }}>
+                  <input type="datetime-local" value={dlEdit.value} onChange={e=>setDlEdit({ id:d.id, value:e.target.value })}
+                    aria-label="新しい締切" style={{ ...inputStyle, width:"auto", padding:"7px 10px", fontSize:13 }} />
+                  {[["+1日",1],["+3日",3],["+7日",7]].map(([l,days]: any)=>(
+                    <button key={l} onClick={()=>setDlEdit({ id:d.id, value: toLocalInput(Math.max(Date.now(), d.deadline) + days*86400000) })}
+                      style={{ background:"none", border:"1px dashed var(--border-2)", borderRadius:99, padding:"4px 10px", fontSize:12, fontWeight:700, color:"var(--text-3)", cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+                  ))}
+                  <button onClick={()=>{
+                      const ms = new Date(dlEdit.value).getTime();
+                      if (!Number.isFinite(ms)) return;
+                      dispatch({ type:"ADMIN_SET_DEADLINE", id:d.id, deadline: ms });
+                      setDlEdit(null);
+                    }}
+                    style={{ background:"var(--btn-active)", color:"#fff", border:"none", borderRadius:8, padding:"6px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>保存</button>
+                  <span style={{ fontSize:11, color:"var(--text-4)" }}>締切を過去にすると即決着・未来にすると再開します</span>
+                </div>
+              )}
             </div>
-          ))}
+          );})}
         </div>
       )}
 

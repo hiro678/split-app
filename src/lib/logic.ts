@@ -234,6 +234,9 @@ export function reducer(state, action) {
         ? { ...c, replies: (c.replies || []).filter(r => r.id !== action.replyId) } : c),
         commentCount: Math.max(0, d.commentCount - 1) };
     })};
+    // 管理者のみ: 締切の変更（延長/短縮）。UIは管理者ダッシュボード限定
+    case "ADMIN_SET_DEADLINE": return { ...state, debates: state.debates.map(d =>
+      d.id === action.id ? { ...d, deadline: action.deadline } : d) };
     case "ADMIN_BAN": return { ...state,
       bannedUsers: state.bannedUsers.includes(action.author)
         ? state.bannedUsers.filter(u => u !== action.author)

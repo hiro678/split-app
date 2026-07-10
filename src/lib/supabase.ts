@@ -201,6 +201,11 @@ export async function syncAction(action) {
         }).then(({ error }) => warn("REPORT")(error));
         break;
       }
+      case "ADMIN_SET_DEADLINE": {
+        await supabase.from("debates").update({ deadline: action.deadline })
+          .eq("id", action.id).then(({ error }) => warn("SET_DEADLINE")(error));
+        break;
+      }
       case "ADMIN_DELETE_DEBATE": {
         await supabase.from("debates").delete().eq("id", action.id).then(({ error }) => warn("DEL_DEBATE")(error));
         break;
