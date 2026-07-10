@@ -17,7 +17,10 @@ export const supabase = isSupabaseConfigured ? createClient(url, anonKey) : null
 // profiles 行を自動作成します（supabase/auth.sql 参照）。
 export async function signUp(email, password, username) {
   if (!supabase) return { error: { message: "DB未接続" } };
-  return supabase.auth.signUp({ email, password, options: { data: { username } } });
+  return supabase.auth.signUp({ email, password, options: {
+    data: { username },
+    emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined, // 確認リンクからアプリへ戻す
+  } });
 }
 export async function signIn(email, password) {
   if (!supabase) return { error: { message: "DB未接続" } };

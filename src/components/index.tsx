@@ -1977,8 +1977,9 @@ export function AdminGateModal({ onSubmit, onClose }) {
 
 // ─── ログイン / 新規登録モーダル ──────────────────────────────────
 export function AuthModal({ onClose, notify }) {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "verify"
   const [email, setEmail] = useState("");
+  const [email2, setEmail2] = useState(""); // 確認用（打ち間違い防止・コピペ可）
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1986,6 +1987,8 @@ export function AuthModal({ onClose, notify }) {
   const isSignup = mode === "signup";
   // ユーザー名のリアルタイム検証（入力中にその場でエラーを表示）
   const unameErr = isSignup && username.trim() ? validateUsername(username) : null;
+  // メール不一致のリアルタイム検証（両方入力済みのときだけ）
+  const emailMismatch = isSignup && email.trim() && email2.trim() && email.trim() !== email2.trim();
 
   // よくある英語エラーを日本語化
   const jpError = (msg = "") => {
@@ -2004,13 +2007,19 @@ export function AuthModal({ onClose, notify }) {
     if (!email.trim() || !password) { setErr("メールとパスワードを入力してください"); return; }
     if (isSignup && !username.trim()) { setErr("ユーザー名を入力してください"); return; }
     if (isSignup) { const ue = validateUsername(username); if (ue) { setErr(ue); return; } }
+    if (isSignup && !email2.trim()) { setErr("確認用メールアドレスを入力してください"); return; }
+    if (isSignup && email.trim() !== email2.trim()) { setErr("メールアドレスが一致しません"); return; }
     setBusy(true);
     try {
       if (isSignup) {
         const { data, error }: any = await signUp(email.trim(), password, username.trim());
         if (error) { console.error("[auth] signUp", error); setErr(jpError(error.message)); return; }
+        // メール確認ON時、登録済みメールには identities が空のダミーuserが返る（情報漏えい防止仕様）
+        if (data?.user && !data.session && data.user.identities?.length === 0) {
+          setErr("このメールアドレスは既に登録されています。ログインしてください"); return;
+        }
         if (data?.session) { notify("アカウントを作成しました"); onClose(); }
-        else { notify("確認メールを送信しました"); setErr("登録しました。メール内のリンクで確認後にログインしてください。"); setMode("login"); }
+        else { setMode("verify"); } // 確認メール送信済み → 専用画面へ
       } else {
         const { error } = await signIn(email.trim(), password);
         if (error) { console.error("[auth] signIn", error); setErr(jpError(error.message)); return; }
@@ -2033,9 +2042,25 @@ export function AuthModal({ onClose, notify }) {
           <div style={{ width:30, height:30, borderRadius:8, overflow:"hidden", display:"flex", flexShrink:0 }}>
             <div style={{ flex:1, background:STANCE.pro.bar }} /><div style={{ flex:1, background:STANCE.con.bar }} />
           </div>
-          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>{isSignup ? "新規登録" : "ログイン"}</h3>
+          <h3 style={{ fontWeight:800, fontSize:18, color:"var(--text)" }}>{mode === "verify" ? "メールを確認してください" : isSignup ? "新規登録" : "ログイン"}</h3>
           <button onClick={onClose} title="閉じる" aria-label="閉じる" style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"var(--text-4)", display:"inline-flex" }}><Icn icon={X} size={18}/></button>
         </div>
+        {mode === "verify" ? (
+          <div style={{ textAlign:"center", padding:"8px 4px 4px" }}>
+            <div style={{ fontSize:40, marginBottom:10 }}>📮</div>
+            <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", marginBottom:8 }}>確認メールを送信しました</p>
+            <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.7, marginBottom:6 }}>
+              <strong style={{ wordBreak:"break-all" }}>{email.trim()}</strong> 宛のメールに記載された
+              リンクをクリックすると登録が完了し、そのままログインされます。
+            </p>
+            <p style={{ fontSize:11.5, color:"var(--text-4)", lineHeight:1.7, marginBottom:14 }}>
+              届かない場合は迷惑メールフォルダを確認してください。
+            </p>
+            <button onClick={()=>{ setMode("login"); setErr(""); }} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
+              ログイン画面へ
+            </button>
+          </div>
+        ) : (<>
         {isSignup && (
           <div>
             <label style={labelStyle}>ユーザー名</label>
@@ -2056,6 +2081,19 @@ export function AuthModal({ onClose, notify }) {
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"
             autoComplete="email" aria-label="メールアドレス" style={inputStyle} />
         </div>
+        {isSignup && (
+          <div>
+            <label style={labelStyle}>メールアドレス（確認用）</label>
+            <input type="email" value={email2} onChange={e=>setEmail2(e.target.value)} placeholder="もう一度入力（貼り付け可）"
+              autoComplete="email" aria-label="メールアドレス（確認用）"
+              style={{ ...inputStyle, ...(emailMismatch ? { border:`1.5px solid ${STANCE.con.color}` } : {}) }} />
+            {emailMismatch && (
+              <p style={{ fontSize:11, color:STANCE.con.color, fontWeight:700, marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+                <Icn icon={AlertCircle} size={12}/> メールアドレスが一致しません
+              </p>
+            )}
+          </div>
+        )}
         <div>
           <label style={labelStyle}>パスワード</label>
           <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
@@ -2068,7 +2106,7 @@ export function AuthModal({ onClose, notify }) {
             <Icn icon={AlertCircle} size={15} style={{ marginTop:1 }}/><span>{err}</span>
           </div>
         )}
-        <button onClick={submit} disabled={busy || !!unameErr} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
+        <button onClick={submit} disabled={busy || !!unameErr || !!emailMismatch} style={{ ...btnPrimary, width:"100%", padding:"11px" }}>
           {busy ? "処理中…" : isSignup ? "登録する" : "ログイン"}
         </button>
         <p style={{ fontSize:12.5, color:"var(--text-3)", textAlign:"center" }}>
@@ -2078,6 +2116,7 @@ export function AuthModal({ onClose, notify }) {
             {isSignup ? "ログイン" : "新規登録"}
           </button>
         </p>
+        </>)}
       </div>
     </div>
   );
