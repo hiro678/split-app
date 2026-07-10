@@ -27,12 +27,34 @@ function mentionableUsers(debates: any[]): string[] {
 }
 
 // 本文中の @username をクリック可能なリンクとして描画
+// 本文中のURLをリンク化（出典・ソース用）。新しいタブで開く。
+const URL_RE = /https?:\/\/[^\s<>"')\]]+/g;
+function linkifyText(text: string, keyPrefix: string) {
+  const nodes: any[] = [];
+  let last = 0, i = 0, m: RegExpExecArray | null;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(text))) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const url = m[0];
+    nodes.push(
+      <a key={`${keyPrefix}u${i++}`} href={url} target="_blank" rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        style={{ color: STANCE.pro.color, fontWeight: 600, wordBreak: "break-all", textDecorationThickness: 1 }}>
+        {url}
+      </a>
+    );
+    last = m.index + url.length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 function renderBody(text: string, dispatch: any) {
   const nodes: any[] = [];
   let last = 0, i = 0, m: RegExpExecArray | null;
   MENTION_RE.lastIndex = 0;
   while ((m = MENTION_RE.exec(text))) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
+    if (m.index > last) nodes.push(...linkifyText(text.slice(last, m.index), `s${i}`));
     const name = m[1];
     nodes.push(
       <button key={`m${i++}`} onClick={(e) => { e.stopPropagation(); dispatch({ type: "SET_USER", author: name }); }}
@@ -43,7 +65,7 @@ function renderBody(text: string, dispatch: any) {
     );
     last = m.index + m[0].length;
   }
-  if (last < text.length) nodes.push(text.slice(last));
+  if (last < text.length) nodes.push(...linkifyText(text.slice(last), "tail"));
   return nodes;
 }
 
