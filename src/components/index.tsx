@@ -439,8 +439,8 @@ export function Thread({ comment, debateId, dispatch, locked }) {
     <div style={{ marginBottom:20, background:"var(--surface)", border:`1px solid ${rootSt.border}`,
       borderRadius:12, padding:"14px 12px 12px", boxShadow:"0 1px 3px rgba(0,0,0,0.03)" }}>
 
-      {/* 縦に積まれる行 */}
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      {/* 縦に積まれる行。賛否が交互（列が違う）のときは重ねて縦を圧縮 */}
+      <div style={{ display:"flex", flexDirection:"column" }}>
         {flow.map((b, i) => (
           <BubbleRow
             key={b.id}
@@ -448,6 +448,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
             rowNum={i + 1}
             prevBubble={i > 0 ? flow[i-1] : null}
             isRoot={i === 0}
+            overlap={i > 0 && flow[i-1].stance !== b.stance}
             debateId={debateId}
             rootCommentId={comment.id}
             rootStance={comment.stance}
@@ -538,7 +539,7 @@ export function Thread({ comment, debateId, dispatch, locked }) {
 }
 
 // ── 1行 = 1バブル: 立場で左カラム(Pros)か右カラム(Cons)のどちらかに配置 ──
-export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCommentId, rootStance, locked, onQuote }) {
+export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, overlap = false, debateId, rootCommentId, rootStance, locked, onQuote }) {
   const st = STANCE[bubble.stance] || STANCE.pro;
   const isPro = bubble.stance === "pro";
   const isRebuttal = prevBubble && prevBubble.stance !== bubble.stance;
@@ -564,7 +565,8 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, debateId, rootCo
   );
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+    // 反対列への返信は前の行に少し重ねる（縦圧縮・LINE風の階段）。同じ列が続く場合は通常の間隔
+    <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop: isRoot ? 0 : overlap ? -20 : 8 }}>
       {connector}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, alignItems:"start" }}>
         {/* 左カラム (Pros) */}
