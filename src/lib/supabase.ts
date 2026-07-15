@@ -116,8 +116,14 @@ export async function fetchDebates() {
 }
 
 // ─── 書き込み: reducer のアクションを DB へミラーリング ───
-// 失敗してもアプリは落とさず警告のみ (楽観的更新は reducer 側で完了済み)。
-const warn = (label) => (err) => { if (err) console.error(`[supabase] ${label}`, err); };
+// 失敗時はコンソールに加えアプリへも通知（黙ってデータが消えるのを防ぐ）。
+let syncErrorHandler: ((label: string, message: string) => void) | null = null;
+export function onSyncError(fn: (label: string, message: string) => void) { syncErrorHandler = fn; }
+const warn = (label) => (err) => {
+  if (!err) return;
+  console.error(`[supabase] ${label}`, err);
+  syncErrorHandler?.(label, err?.message || String(err));
+};
 
 // createdAt が Date でも数値でも bigint(ミリ秒) に正規化
 const toMs = (v) => (v == null ? Date.now() : Number(new Date(v)));
@@ -239,5 +245,6 @@ export async function syncAction(action) {
     }
   } catch (e) {
     console.error("[supabase] syncAction failed", e);
+    syncErrorHandler?.(action?.type || "sync", (e as any)?.message || String(e));
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useReducer, useMemo, useContext, createContext, useEffect, useRef, useCallback } from "react";
 import { isSupabaseConfigured, fetchDebates, syncAction, seedDebates,
-  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile, updateAvatar, fetchMyVotes } from "./lib/supabase";
+  signUp, signIn, signOut, getSession, onAuthChange, fetchProfile, updateAvatar, fetchMyVotes, onSyncError } from "./lib/supabase";
 import { INIT_DEBATES } from "./data/seedDebates";
 import {
   ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Menu, Search, Moon, Sun, Shield,
@@ -123,6 +123,13 @@ export default function App() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2400);
   }, []);
+
+  // DB書き込み失敗をユーザーに見せる（黙ってデータが消えるのを防ぐ）
+  useEffect(() => {
+    onSyncError((label) => {
+      notify(`サーバーへの保存に失敗しました（${label}）。運営に連絡してください`, "con");
+    });
+  }, [notify]);
 
   // アクションに応じたフィードバック文言（rawDispatch 前の state で判定）
   const feedbackFor = useCallback((action) => {

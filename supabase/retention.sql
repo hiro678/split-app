@@ -1,10 +1,17 @@
 -- ════════════════════════════════════════════════════════════════
---  Split — リテンション機能スキーマ
---   #4 ストリーク / 活動ログ土台  ＋  #6 デイリーミッション
+--  Split View — 差分スキーマ（このファイル1回の実行で最新に揃います）
 --  Supabase ダッシュボード → SQL Editor に貼り付けて実行してください。
---  再実行しても安全（create table if not exists / create or replace）。
+--  再実行しても安全（if not exists / or replace で冪等）。
 --  ※ auth.users を参照するため、ログイン（profiles）導入済み前提。
 -- ════════════════════════════════════════════════════════════════
+
+-- ── 0. 基本テーブルの差分カラム（未適用だと投稿・コメントが保存に失敗します）──
+alter table debates  add column if not exists integrity jsonb;
+alter table comments add column if not exists integrity jsonb;
+alter table replies  add column if not exists integrity jsonb;
+alter table replies  add column if not exists stance text;
+alter table debates  add column if not exists pro_label text;
+alter table debates  add column if not exists con_label text;
 
 -- ── 1日ごとの活動ログ（ストリーク・ミッション・週間リーグの共有土台）──
 create table if not exists user_activity (
