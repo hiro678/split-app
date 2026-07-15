@@ -360,6 +360,10 @@ alter table profiles add column if not exists bio text;
 -- P3-15: サムネイルの表示位置（上下 0-100%。一覧カードの切り抜き調整）
 alter table debates add column if not exists thumb_pos int;
 
+-- コメント/返信の編集（投稿15分以内・編集済み表示）
+alter table comments add column if not exists edited boolean default false;
+alter table replies  add column if not exists edited boolean default false;
+
 -- ════════════════════════════════════════════════════════════════
 --  P2-10: アイコン写真 — Storage バケット avatars（公開読み取り）
 --   書き込みは自分のフォルダ {auth.uid()}/... のみ。

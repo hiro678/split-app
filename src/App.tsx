@@ -137,7 +137,8 @@ export default function App() {
       } else {
         notify(next ? `「${STANCE[next].label}」に投票しました` : "投票を取り消しました", next ? next : "info");
       }
-    } else if (action.type === "ADD_COMMENT") notify("コメントを投稿しました", "pro");
+    } else if (action.type === "EDIT_BUBBLE") notify("コメントを編集しました");
+    else if (action.type === "ADD_COMMENT") notify("コメントを投稿しました", "pro");
     else if (action.type === "ADD_REPLY") notify("返信を投稿しました", "pro");
     else if (action.type === "ADD_DEBATE") notify("ディベートを作成しました", "pro");
     else if (action.type === "SAVE") {

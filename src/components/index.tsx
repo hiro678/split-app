@@ -1,7 +1,7 @@
 // プレゼンテーション層コンポーネント一式
 import { useState, useContext, useMemo, useRef, useEffect } from "react";
 import { Icn, ThumbsUp, ThumbsDown, Heart, Flag, Bookmark, X, Shield, MessageCircle, Clock, Lock, Share2, Link2, Sparkles, Flame, Trophy, Target, BarChart3, TrendingUp, Megaphone, Lightbulb, ClipboardList, Users, Ban, ArrowLeft, ChevronUp, ChevronDown, CornerUpLeft, CornerDownRight, Image as ImageIcon, Circle, CircleDot, CheckCircle2, AlertCircle, KeyRound, PenLine, Search, Bell } from "../ui/Icn";
-import { STANCE, TOPICS, REPORT_REASONS, PRED_AWARD } from "../data/constants";
+import { STANCE, TOPICS, REPORT_REASONS, PRED_AWARD, EDIT_WINDOW_MS } from "../data/constants";
 import { getBadge, repOf, allBubbles, likesReceived, popularUsers, myUsage, perkOf, fmt, ago, timeLeft, pct, getRelated, suggestStanceLabels, pickDailyDebate, isDecided, winnerSide } from "../lib/logic";
 import { getDailyOverride, setDailyOverride } from "../lib/daily";
 import { todayStr } from "../lib/retention";
@@ -566,8 +566,8 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, overlap = false,
   );
 
   return (
-    // 反対列への返信は前の行に少し重ねる（縦圧縮・LINE風の階段）。同じ列が続く場合は通常の間隔
-    <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop: isRoot ? 0 : overlap ? -20 : 8 }}>
+    // 反対列への返信は前の行に大きく重ねる（縦圧縮・LINE風の階段）。同じ列が続く場合は通常の間隔
+    <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop: isRoot ? 0 : overlap ? -32 : 6 }}>
       {connector}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, alignItems:"start" }}>
         {/* 左カラム (Pros) */}
@@ -584,8 +584,21 @@ export function BubbleRow({ bubble, rowNum, prevBubble, isRoot, overlap = false,
 }
 
 export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, locked, onQuote }) {
-  const { dispatch, me, myAvatar, isAuthed } = useContext(AppContext);
+  const { dispatch, me, myAvatar, isAuthed, notify } = useContext(AppContext);
   const liked = bubble.vote === 1;
+  // 自分の投稿は15分以内なら編集可（すり替え防止のため短い窓＋編集済み表示）
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const editGuard = useTypingGuard(notify);
+  const canEdit = !locked && bubble.author === me && Date.now() - bubble.id < EDIT_WINDOW_MS;
+  const saveEdit = () => {
+    const body = draft.trim();
+    if (!body) return;
+    dispatch({ type: "EDIT_BUBBLE", debateId: likeInfo.debateId, stance: likeInfo.stance,
+      commentId: likeInfo.commentId, replyId: likeInfo.replyId, body });
+    editGuard.reset();
+    setEditing(false);
+  };
   // 引用元へスクロール＋一瞬ハイライト
   const jumpToQuoted = (id) => {
     const el = document.getElementById(`bubble-${id}`);
@@ -625,6 +638,15 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
               color: liked ? "#e11d48" : "var(--text-4)", fontSize:10, fontWeight:700 }}>
             <Icn icon={Heart} size={12} fill={liked ? "currentColor" : "none"}/>{fmt(bubble.score)}
           </button>
+          {canEdit && !editing && (
+            <button onClick={()=>{ setDraft(bubble.body); setEditing(true); }}
+              title="編集（投稿から15分以内のみ）"
+              style={{ display:"flex", alignItems:"center", gap:3, background:"none", border:"1px solid transparent",
+                borderRadius:99, padding:"1px 7px", cursor:"pointer", fontFamily:"inherit",
+                color:"var(--text-4)", fontSize:10, fontWeight:700 }}>
+              <Icn icon={PenLine} size={11}/>編集
+            </button>
+          )}
           {!locked && onQuote && (
             <button onClick={()=>onQuote(bubble, rowNum)}
               title="この発言を引用して返信"
@@ -648,6 +670,7 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
         borderRadius: isPro ? "4px 12px 12px 12px" : "12px 4px 12px 12px",
         padding:"10px 12px",
         fontSize:13, color:"var(--text-2)", lineHeight:1.6,
+        whiteSpace:"pre-wrap", wordBreak:"break-word", // 改行を保持
         boxShadow: isRoot ? "0 1px 3px rgba(0,0,0,0.05)" : "none",
         position:"relative",
       }}>
@@ -679,7 +702,30 @@ export function BubbleContent({ bubble, rowNum, isRoot, st, isPro, likeInfo, loc
             </span>
           </button>
         )}
-        {renderBody(bubble.body, dispatch)}
+        {editing ? (
+          <div style={{ whiteSpace:"normal" }}>
+            <textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={3} autoFocus {...editGuard.bind}
+              onKeyDown={(e:any)=>{ if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); saveEdit(); } }}
+              aria-label="コメントを編集"
+              style={{ width:"100%", padding:"6px 9px", border:`1px solid ${st.border}`, borderRadius:8,
+                fontSize:13, fontFamily:"inherit", lineHeight:1.6, resize:"vertical", outline:"none",
+                background:"var(--surface)", color:"var(--text)" }} />
+            <div style={{ display:"flex", gap:6, marginTop:6, alignItems:"center" }}>
+              <button onClick={saveEdit} disabled={!draft.trim()}
+                style={{ background:st.color, color:"#fff", border:"none", borderRadius:99, padding:"3px 13px",
+                  fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>保存</button>
+              <button onClick={()=>setEditing(false)}
+                style={{ background:"none", border:"1px solid var(--border)", borderRadius:99, padding:"3px 13px",
+                  fontSize:11.5, fontWeight:700, color:"var(--text-2)", cursor:"pointer", fontFamily:"inherit" }}>キャンセル</button>
+              <span style={{ fontSize:10, color:"var(--text-4)" }}>編集後は「編集済み」と表示されます</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {renderBody(bubble.body, dispatch)}
+            {bubble.edited && <span style={{ display:"block", fontSize:10, color:"var(--text-4)", marginTop:4 }}>（編集済み）</span>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -1140,7 +1186,7 @@ export function UserPage({ author, dispatch }) {
                   <span style={{ fontSize:11, color:"var(--text-4)" }}>on「{b.debate.title}」</span>
                   <span style={{ fontSize:11, color:"#e11d48", fontWeight:700, marginLeft:"auto", display:"inline-flex", alignItems:"center", gap:4 }}><Icn icon={Heart} size={12} fill="currentColor"/> {fmt(b.score)}</span>
                 </div>
-                <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6 }}>{renderBody(b.body, dispatch)}</p>
+                <p style={{ fontSize:13, color:"var(--text-2)", lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{renderBody(b.body, dispatch)}</p>
               </div>
             );
           })}
@@ -1205,7 +1251,7 @@ export function DebateDetail({ d, allDebates, dispatch, myPred, onPredict }) {
             <span>・ {ago(d.createdAt)}</span>
           </div>
           <h2 style={{ fontSize:27, fontWeight:800, color:"var(--text)", lineHeight:1.28, marginBottom:16, letterSpacing:-0.5 }}>{d.title}</h2>
-          <p style={{ fontSize:15, color:"var(--text-2)", lineHeight:1.8, marginBottom:16 }}>{d.description}</p>
+          <p style={{ fontSize:15, color:"var(--text-2)", lineHeight:1.8, marginBottom:16, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{d.description}</p>
           {(d.tags || []).length > 0 && (
             <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:24 }}>
               {d.tags.map(t => (

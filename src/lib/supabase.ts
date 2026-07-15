@@ -89,7 +89,7 @@ export async function fetchDebates() {
   for (const r of replies || []) {
     (repliesByComment[r.comment_id] ||= []).push({
       id: r.id, author: r.author, body: r.text, stance: r.stance || "pro", score: r.score || 0, vote: 0, integrity: r.integrity || null,
-      quote: r.quote || null,
+      quote: r.quote || null, edited: r.edited || false,
     });
   }
   for (const arr of Object.values(repliesByComment)) arr.sort((a, b) => a.id - b.id);
@@ -97,6 +97,7 @@ export async function fetchDebates() {
   for (const c of comments || []) {
     const node = {
       id: c.id, author: c.author, body: c.text, score: c.score || 0, vote: 0, integrity: c.integrity || null,
+      edited: c.edited || false,
       replies: repliesByComment[c.id] || [],
     };
     (c.stance === "pro" ? (proByDebate[c.debate_id] ||= []) : (conByDebate[c.debate_id] ||= [])).push(node);
@@ -188,6 +189,13 @@ export async function syncAction(action) {
             warn("SET_STANCE")(error);
             if (!error && data && data.ok === false) console.warn("[supabase] cast_vote rejected:", data.reason);
           });
+        break;
+      }
+      case "EDIT_BUBBLE": {
+        const table = action.replyId != null ? "replies" : "comments";
+        const id = action.replyId ?? action.commentId;
+        await supabase.from(table).update({ text: action.body, edited: true })
+          .eq("id", id).then(({ error }) => warn("EDIT_BUBBLE")(error));
         break;
       }
       case "LIKE": {

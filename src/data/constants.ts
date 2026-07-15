@@ -78,7 +78,11 @@ export const ADMIN_PASSCODE = "split-admin";
 export const NEEDS_AUTH = new Set([
   "SET_STANCE", "ADD_COMMENT", "ADD_REPLY", "ADD_DEBATE", "LIKE", "SAVE",
   "REPORT", "OPEN_REPORT", // 通報はモーダルを開く時点でログインを要求
+  "EDIT_BUBBLE",
 ]);
+
+// コメント/返信を編集できる時間（投稿からのミリ秒）。議論のすり替え防止のため短めに。
+export const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 export const STANCE = {
   pro: { label: "賛成", color: "#1d4ed8", bg: "var(--pro-bg)", border: "#bfdbfe", bar: "#93c5fd", light: "var(--pro-light)", Icon: ThumbsUp },

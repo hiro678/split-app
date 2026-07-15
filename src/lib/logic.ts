@@ -195,6 +195,16 @@ export function reducer(state, action) {
         [key]: d[key].map(c => c.id===action.commentId ? {...c, replies:[...(c.replies||[]), action.reply]} : c),
         commentCount: d.commentCount+1 };
     })};
+    // 自分のコメント/返信の編集（本文置換＋編集済みフラグ）。期限判定はUI側
+    case "EDIT_BUBBLE": return { ...state, debates: state.debates.map(d => {
+      if (d.id !== action.debateId || d.status === "closed") return d;
+      const key = action.stance === "pro" ? "proComments" : "conComments";
+      return { ...d, [key]: d[key].map(c => {
+        if (c.id !== action.commentId) return c;
+        if (action.replyId == null) return { ...c, body: action.body, edited: true };
+        return { ...c, replies: (c.replies || []).map(r => r.id === action.replyId ? { ...r, body: action.body, edited: true } : r) };
+      })};
+    })};
     case "LIKE": return { ...state, debates: state.debates.map(d => {
       if (d.id !== action.debateId || d.status === "closed") return d;
       const key = action.stance === "pro" ? "proComments" : "conComments";
