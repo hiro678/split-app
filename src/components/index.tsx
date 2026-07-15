@@ -2112,7 +2112,7 @@ export function HeroBanner({ onDismiss, onStart, onGuide }: { onDismiss: () => v
       {onStart && (
         <button onClick={onStart} className="wordmark"
           style={{ ...btnPrimary, marginBottom:16, padding:"10px 26px", fontSize:15, letterSpacing:0.2 }}>
-          Make your case →
+          Take a side →
         </button>
       )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:10 }}>

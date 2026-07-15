@@ -951,13 +951,13 @@ export default function App() {
                   )}
                   {visible.length} 件のディベート
                   <button onClick={toggleRail}
-                    title={railHidden ? "人気ユーザー・人気のタグ・ランク一覧を表示" : "人気情報を隠す"}
+                    title={railHidden ? "人気ユーザー・人気のタグ・ランク一覧を表示" : "トレンドを隠す"}
                     aria-label={railHidden ? "サブ情報を表示" : "サブ情報を隠す"}
                     style={{ background: railHidden ? "none" : "var(--surface-2)", border:"1px solid var(--border)",
                       borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
                       color:"var(--text-3)", display:"inline-flex", alignItems:"center", gap:5 }}>
                     <Icn icon={railHidden ? PanelRightOpen : PanelRightClose} size={15}/>
-                    人気情報
+                    トレンド
                   </button>
                 </span>
               </div>
